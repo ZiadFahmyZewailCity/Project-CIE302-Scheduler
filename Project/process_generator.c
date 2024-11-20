@@ -2,6 +2,13 @@
 
 void clearResources(int);
 
+struct process{
+    unsigned int id;
+    unsigned int arrivalTime;
+    unsigned int runTime;
+    unsigned int priority;
+};
+
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
