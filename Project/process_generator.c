@@ -2,7 +2,7 @@
 
 void clearResources(int);
 
-struct process{
+struct processData{
     unsigned int id;
     unsigned int arrivalTime;
     unsigned int runTime;

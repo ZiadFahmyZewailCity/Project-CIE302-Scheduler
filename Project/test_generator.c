@@ -3,12 +3,11 @@
 #include <time.h>
 #define null 0
 
-struct processData
-{
-    int arrivaltime;
-    int priority;
-    int runningtime;
-    int id;
+struct processData{
+    unsigned int id;
+    unsigned int arrivalTime;
+    unsigned int runTime;
+    unsigned int priority;
 };
 
 int main(int argc, char * argv[])
