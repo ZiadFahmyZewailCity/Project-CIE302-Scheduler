@@ -26,10 +26,10 @@ void clearResources(int signum)
     //TODO Clears all resources in case of interruption
 }
 
-struct process* load(char* inpFileName)
+struct processData* load(char* inpFileName)
 {
 	int count_processes = 0;
-	struct process* p_arr_process;
+	struct processData* p_arr_process;
 	
 	//Opening File and checking if its been successfully opened 
 	FILE* p_file = fopen(inpFileName, "r");
@@ -54,7 +54,7 @@ struct process* load(char* inpFileName)
 	fclose(p_file);
 
 	//Dyanmic allocation of array for processes
-	p_arr_process = (struct process*) malloc(count_processes * sizeof(struct process));
+	p_arr_process = (struct processData*) malloc(count_processes * sizeof(struct processData));
 
 
 	//Reopening input file
@@ -72,7 +72,7 @@ struct process* load(char* inpFileName)
 	//itterating through file to get data of each 
 	for (int i = 0; i < count_processes; i++)
 	{
-		if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].ID, &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime, &p_arr_process[i].priority) != 4) 
+		if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].id, &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime, &p_arr_process[i].priority) != 4) 
 		{
 			printf("Issue reading from file");
 		};
