@@ -15,6 +15,8 @@ int main(int argc, char *argv[]) {
          "Choose the Scheduling Algorithm: ");
 
   enum schedulingAlgorithm schedulingAlg;
+  unsigned int quantum = 0;
+
   scanf("%u", &schedulingAlg);
 
   while (schedulingAlg != SJF && schedulingAlg != PHPF && schedulingAlg != RR) {
@@ -27,13 +29,40 @@ int main(int argc, char *argv[]) {
   }
 
   if (schedulingAlg == RR) {
-    unsigned int quantum;
     printf("Type the Quantum length: ");
     scanf("%u", &quantum);
   }
 #pragma endregion
 
   // 3. Initiate and create the scheduler and clock processes.
+#pragma region "Clock Process"
+  int pid = fork();
+  if (pid == -1) {
+    perror("Failure in forking");
+  }
+
+  if (pid == 0) {
+    char *args[] = {"./clk.out", NULL};
+    execv(args[0], args);
+  };
+#pragma endregion
+
+#pragma region "Scheduler Process "
+  pid = fork();
+  if (pid == -1) {
+    perror("Failure in forking");
+  }
+  //
+  if (pid == 0) {
+    char strSchedulingAlg[5];
+    char strQuantum[5];
+    sprintf(strSchedulingAlg, "%d", schedulingAlg);
+    sprintf(strQuantum, "%d", quantum);
+    char *args[] = {"./scheduler.out", strSchedulingAlg, strQuantum, NULL};
+    execv(args[0], args);
+  };
+#pragma endregion
+
   // 4. Use this function after creating the clock process to initialize clock
   initClk();
   // To get time use this
