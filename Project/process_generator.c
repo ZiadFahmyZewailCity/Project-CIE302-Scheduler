@@ -8,6 +8,33 @@ int main(int argc, char * argv[])
     // TODO Initialization
     // 1. Read the input files.
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
+    #pragma region "User Input"
+        printf(
+        "1. SJF: Shortest Job First\n"
+        "2. PHPF: Preemptive Highest Priority First\n"
+        "3. RR: Round Robin\n\n"
+        "Choose the Scheduling Algorithm: ");
+        
+        enum schedulingAlgorithm schedulingAlg;
+        scanf("%u", &schedulingAlg);
+        
+        while (schedulingAlg!=SJF,schedulingAlg!=PHPF,schedulingAlg!=RR)
+        {
+        printf(
+        "Please select a valid option.\n"
+        "1. SJF: Shortest Job First\n"
+        "2. PHPF: Preemptive Highest Priority First\n"
+        "3. RR: Round Robin\n\n"
+        "Choose the Scheduling Algorithm: ");
+        scanf("%u", &schedulingAlg);
+        }
+        if(schedulingAlg==RR){
+            unsigned int quantum;
+            printf("Type the Quantum length: ");
+            scanf("%u", &quantum);
+        }
+    #pragma endregion 
+    
     // 3. Initiate and create the scheduler and clock processes.
     // 4. Use this function after creating the clock process to initialize clock
     initClk();

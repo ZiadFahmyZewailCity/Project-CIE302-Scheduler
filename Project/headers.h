@@ -25,6 +25,12 @@ struct processData{
     unsigned int priority;
 };
 
+enum schedulingAlgorithm{
+    SJF=1,
+    PHPF,
+    RR
+};
+
 
 ///==============================
 //don't mess with this variable//
