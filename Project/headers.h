@@ -17,6 +17,14 @@ typedef short bool;
 
 #define SHKEY 300
 
+//Process data structure
+struct processData{
+    unsigned int id;
+    unsigned int arrivalTime;
+    unsigned int runTime;
+    unsigned int priority;
+};
+
 
 ///==============================
 //don't mess with this variable//
