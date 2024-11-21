@@ -18,7 +18,7 @@ int main(int argc, char * argv[])
         enum schedulingAlgorithm schedulingAlg;
         scanf("%u", &schedulingAlg);
         
-        while (schedulingAlg!=SJF,schedulingAlg!=PHPF,schedulingAlg!=RR)
+        while (schedulingAlg!=SJF&&schedulingAlg!=PHPF&&schedulingAlg!=RR)
         {
         printf(
         "Please select a valid option.\n"
