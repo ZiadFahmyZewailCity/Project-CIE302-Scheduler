@@ -87,6 +87,19 @@ int main(int argc, char *argv[]) {
   printf("current time is %d\n", x);
 
   // TODO Generation Main Loop
+  int i = 0;
+  struct processMsgBuff message;
+  while (i < count_processes) {
+    x = getClk();
+    if (x >= processDataList[i].arrivalTime) {
+      message.process = processDataList[i];
+      Gen_Sched_SND_VAL =
+          msgsnd(Gen_Sched_MSGQ, &message, sizeof(message), !IPC_NOWAIT);
+      i++;
+    } else {
+      sleep(1);
+    }
+  }
   // 5. Create a data structure for processes and provide it with its
   // parameters.
   // 6. Send the information to the scheduler at the appropriate time.

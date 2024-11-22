@@ -86,8 +86,10 @@ struct processData *load(char *inpFileName, int *count_processes) {
 }
 
 // Inter Process Communication
-struct msgbuff {
-  long mtype;
+// Structure for Process message buffer, if any additions are need beyond the
+// process data
+struct processMsgBuff {
+  // long mtype;
   processData process;
 };
 
