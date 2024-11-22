@@ -20,7 +20,8 @@ int main(int agrc, char * argv[])
     
 
     initClk();
-    
+    unsigned int start = getClk();
+
     int x = getClk();
     remainingtime = atoi(argv[1]);
     // it needs to get the remaining time from somewhere
