@@ -1,7 +1,8 @@
 #include "headers.h"
 #include <stdio.h>
 
-#define RUN_TIME argv[3]
+#define RUN_TIME atoi(argv[1])
+#define PROCESS_ID atoi(argv[2])
 
 
 /* Modify this file as needed*/
@@ -15,8 +16,7 @@ int main(int agrc, char * argv[])
     unsigned int startTime = getClk();
 
     int x = getClk();
-    remainingtime = atoi(RUN_TIME);
-    // it needs to get the remaining time from somewhere
+    remainingtime = RUN_TIME;
     while (remainingtime > 0)
     {
         if (getClk() != x){
