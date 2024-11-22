@@ -145,6 +145,11 @@ void output()
         {
             printf("Failed to receive\n");
         }
+        //This checks if the update is that the process is terminated to print the extra files
+        else if(p)
+        {
+
+        }
         else
         {
             // REMOVE WHEN DONE
@@ -178,11 +183,28 @@ void output(struct PCB inpPCB)
         perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
         return;
     }
-    int wait_time = (inpPCB.currentTime - inpPCB..arrivalTime) - inpPCB.totalTimeRun;
+ 
+        
+    int wait_time = (inpPCB.currentTime - inpPCB.arrivalTime) - inpPCB.totalTimeRun;
     int remain_time = inpPCB.totalTime - inpPCB.totalTimeRun;
 
-    fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n"
-    ,inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time);
+    //This checks if the update is that the process is terminated to print the extra parameters, 
+    //number should be equal to the enum of terminated status
+    if(inpPCB.status == 5)
+    {
+        int turnAround = inpPCB.currentTime-inpPCB.arrivalTime;
+        int weightedTurnAround = (inpPCB.currentTime-inpPCB.arrivalTime)/inpPCB.totalTimeRun;
+
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n" \tTA %d \tWTA %d,
+        ,inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time,turnAround,weightedTurnAround);
+    }
+    else
+    {
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n", 
+        inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time);
+
+    }
 
     fclose(p_out);
 }
+    
