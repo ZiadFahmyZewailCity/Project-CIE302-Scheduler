@@ -5,10 +5,10 @@
 
 struct processData
 {
-    int arrivaltime;
-    int priority;
-    int runningtime;
-    int id;
+    uint arrivaltime;
+    uint priority;
+    uint runningtime;
+    uint id;
 };
 
 int main(int argc, char * argv[])
