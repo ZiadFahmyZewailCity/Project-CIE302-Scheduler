@@ -105,7 +105,7 @@ void output()
 {
     //WARNING THE SIGNAL WHICH SHOULD BE MAPPED TO OUT SIGNAL HANDLER SHOULD BE A CUSTOM ONE SIGINT
     //IS A PLACEHOLDER FOR TESTING
-    signal(SIGINT,signalHandler_outputfunctionEXIT);
+    signal(SIGUSR1,signalHandler_outputfunctionEXIT);
     key_t queue_PUP_ID;
     int msqPUP_id, rec_PUP;
     
