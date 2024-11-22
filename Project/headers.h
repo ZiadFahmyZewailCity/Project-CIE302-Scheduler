@@ -1,15 +1,15 @@
-#include <signal.h>
-#include <stdio.h> //if you don't use scanf/printf change this include
-#include <stdlib.h>
+#include <stdio.h>      //if you don't use scanf/printf change this include
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <sys/sem.h>
+#include <sys/msg.h>
 #include <sys/wait.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 typedef short bool;
 #define true 1
@@ -17,156 +17,194 @@ typedef short bool;
 
 #define SHKEY 300
 
-// Process data structure
-struct processData {
-  unsigned int id;
-  unsigned int arrivalTime;
-  unsigned int runTime;
-  unsigned int priority;
-  unsigned int PID;
-};
 
-struct PCB {
-    state;
-    unsigned int executionTime;
-    unsigned int remainingTime;
-    unsigned int waitingTime;
-};
-
-enum state {running =1, waiting =2};
-
-enum schedulingAlgorithm { SJF = 1, PHPF, RR };
-
-// Process Data Loader
-struct processData *load(char *inpFileName, int *count_processes) {
-  *count_processes = 0;
-  struct processData *p_arr_process;
-
-  // Opening File and checking if its been successfully opened
-  FILE *p_file = fopen(inpFileName, "r");
-  if (p_file == NULL) {
-    perror("ERROR HAS OCCURED IN INPUT FILE OPENINING");
-    fclose(p_file);
-    return NULL;
-  }
-
-  // Buffer needed to store content of line (This is needed even we dont need
-  // the content while counting the number of processes)
-  char buffer[256];
-
-  // skipping past comments line
-  fgets(buffer, sizeof(buffer), p_file);
-
-  // itterating through the file to find number of processes
-  while (fgets(buffer, sizeof(buffer), p_file) != NULL) {
-    *count_processes += 1;
-  }
-
-  // once counting is complete we close the file to now read the file data
-  fclose(p_file);
-
-  // Dyanmic allocation of array for processes
-  p_arr_process = (struct processData *)malloc(*count_processes *
-                                               sizeof(struct processData));
-
-  // Reopening input file
-  p_file = fopen(inpFileName, "r");
-  if (p_file == NULL) {
-    perror("ERROR HAS OCCURED IN INPUT FILE OPENINING _2_");
-    fclose(p_file);
-    return NULL;
-  }
-
-  // skipping past comments line
-  fgets(buffer, sizeof(buffer), p_file);
-
-  // itterating through file to get data of each
-  for (int i = 0; i < *count_processes; i++) {
-    if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].id,
-               &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime,
-               &p_arr_process[i].priority) != 4) {
-      printf("Issue reading from file");
-    };
-  }
-
-  // Close File
-  fclose(p_file);
-
-  return p_arr_process;
-}
-
-#pragma region "Inter Process Communication"
-// Structure for Process message buffer, if any additions are need beyond the
-// process data
-struct processMsgBuff {
-  // long mtype;
-  struct processData process;
-};
-
-#pragma endregion
-
-#pragma region "Clock Stuff"
 ///==============================
-// don't mess with this variable//
-int *shmaddr; //
+//don't mess with this variable//
+int * shmaddr;                 //
 //===============================
 
-int getClk() { return *shmaddr; }
+
+
+int getClk()
+{
+    return *shmaddr;
+}
+
 
 /*
- * All process call this function at the beginning to establish communication
- * between them and the clock module. Again, remember that the clock is only
- * emulation!
- */
-
-void initClk() {
-  int shmid = shmget(SHKEY, 4, 0444);
-  while ((int)shmid == -1) {
-    // Make sure that the clock exists
-    printf("Wait! The clock not initialized yet!\n");
-    sleep(1);
-    shmid = shmget(SHKEY, 4, 0444);
-  }
-  shmaddr = (int *)shmat(shmid, (void *)0, 0);
+ * All process call this function at the beginning to establish communication between them and the clock module.
+ * Again, remember that the clock is only emulation!
+*/
+void initClk()
+{
+    int shmid = shmget(SHKEY, 4, 0444);
+    while ((int)shmid == -1)
+    {
+        //Make sure that the clock exists
+        printf("Wait! The clock not initialized yet!\n");
+        sleep(1);
+        shmid = shmget(SHKEY, 4, 0444);
+    }
+    shmaddr = (int *) shmat(shmid, (void *)0, 0);
 }
+
 
 /*
  * All process call this function at the end to release the communication
  * resources between them and the clock module.
  * Again, Remember that the clock is only emulation!
- * Input: terminateAll: a flag to indicate whether that this is the end of
- * simulation. It terminates the whole system and releases resources.
- */
+ * Input: terminateAll: a flag to indicate whether that this is the end of simulation.
+ *                      It terminates the whole system and releases resources.
+*/
 
-void destroyClk(bool terminateAll) {
-  shmdt(shmaddr);
-  if (terminateAll) {
-    killpg(getpgrp(), SIGINT);
-  }
+void destroyClk(bool terminateAll)
+{
+    shmdt(shmaddr);
+    if (terminateAll)
+    {
+        killpg(getpgrp(), SIGINT);
+    }
 }
 
-/* -----------------------------priority Queue----------------------------- */
-//Defining priority queue node and structure
-typedef struct Node {
-    struct processData process;
-    struct Node *next;
-} Node;
+//This is the code related to the output file still needs to be integrated with the rest of the code
 
-typedef struct {
-    Node *head;
-} PriorityQueue;
 
-typedef struct {
-    long message_type;
-    struct processData process;
-} Message;
 
-PriorityQueue* initialize_priQ();
-Node* create_Node(struct processData process);
-void process_messages (PriorityQueue *pq, int msgid);
-void insert_PHPF_priQ(PriorityQueue *pq, struct processData process);
-void print_priQ(PriorityQueue *pq);
-void handle_PHPF_process(PriorityQueue *pq, struct processData process);
-void cleanup_priQ(PriorityQueue *pq);
+//WARNING THIS IS A GLOBAL VARIABLE UNTIL A WAY FOR THE SIGNAL AND HANDLER AND OUTPUT FUNTION TO 
+//SEE THIS FILE VARIABLE
+FILE* p_out;
 
-#pragma endregion
+//WE SHOULD PROBABLY PUT ALL SIGNALS HANDLERS IN A HEADER FILE
+void signalHandler_outputfunctionEXIT(int signal)
+{
+    fclose(p_out);
+    exit(0);
+}
+
+//PCB IS A PLACEHOLDER STRUCT 
+struct PCB
+{
+    int currentTime;
+    int totalTime;
+    int processsID;
+    int status;
+    int arrivalTime;
+    int remainingTime;
+    int totalTimeRun;
+};
+
+struct message
+{
+    int messageType;
+    struct PCB sent_PCB;
+};
+
+
+//This acts similar to a server, waits for an update to the process to occur
+//if it does writes the required details in a file
+void output()
+{
+    //WARNING THE SIGNAL WHICH SHOULD BE MAPPED TO OUT SIGNAL HANDLER SHOULD BE A CUSTOM ONE SIGINT
+    //IS A PLACEHOLDER FOR TESTING
+    signal(SIGUSR1,signalHandler_outputfunctionEXIT);
+    key_t queue_PUP_ID;
+    int msqPUP_id, rec_PUP;
+    
+    // Get unique ID for process_update queue
+    queue_PUP_ID = ftok("N", 'P'); 
+
+    // Getting the down queue
+    msqPUP_id = msgget(queue_PUP_ID, 0666 | IPC_CREAT);
+
+    if (msqPUP_id == -1)
+    {
+        printf("Error message during creation of process_update queue\n");
+        return;
+    }
+
+    // Remove when fully tested
+    printf("Output initialized\n");
+
+    p_out = fopen("check.txt", "w");
+    if (p_out == NULL)
+    {
+        perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+        return;
+    }
+
+    struct message p;  // Assuming the PCB structure is defined somewhere else
+
+    // Print file header
+    fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
+ 
+    while (1)
+    {
+        // Receive message
+        rec_PUP = msgrcv(msqPUP_id, &p, sizeof(p.sent_PCB), 0,0);
+        if (rec_PUP == -1)
+        {
+            printf("Failed to receive\n");
+        }
+        //This checks if the update is that the process is terminated to print the extra files
+        else if(p)
+        {
+
+        }
+        else
+        {
+            // REMOVE WHEN DONE
+            printf("Message received\n");
+            //Current time should be found from the clock
+            int wait_time = (p.sent_PCB.currentTime - p.sent_PCB.arrivalTime) - p.sent_PCB.totalTimeRun;
+            int remain_time = p.sent_PCB.totalTime - p.sent_PCB.totalTimeRun;
+
+
+            
+            // Print process information to the file
+            
+            fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n",
+                   p.sent_PCB.currentTime, p.sent_PCB.processsID, p.sent_PCB.arrivalTime, p.sent_PCB.totalTime, remain_time, wait_time);
+        }
+    }
+
+    fclose(p_out);
+}
+
+//Version of output function that doesnt work like a sever
+
+//p_out = fopen("check.txt", "w");
+//fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
+//fclose(p_out);
+void output(struct PCB inpPCB)
+{
+    p_out = fopen("check.txt", "a");
+    if (p_out == NULL)
+    {
+        perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+        return;
+    }
+ 
+        
+    int wait_time = (inpPCB.currentTime - inpPCB.arrivalTime) - inpPCB.totalTimeRun;
+    int remain_time = inpPCB.totalTime - inpPCB.totalTimeRun;
+
+    //This checks if the update is that the process is terminated to print the extra parameters, 
+    //number should be equal to the enum of terminated status
+    if(inpPCB.status == 5)
+    {
+        int turnAround = inpPCB.currentTime-inpPCB.arrivalTime;
+        float weightedTurnAround = (inpPCB.currentTime-inpPCB.arrivalTime)/inpPCB.totalTimeRun;
+
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n \tTA %d \tWTA %.2F",
+        ,inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time,turnAround,weightedTurnAround);
+    }
+    else
+    {
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n", 
+        inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time);
+
+    }
+
+    fclose(p_out);
+}
+    
