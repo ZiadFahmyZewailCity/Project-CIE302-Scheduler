@@ -85,6 +85,7 @@ struct processData *load(char *inpFileName) {
   return p_arr_process;
 }
 
+#pragma region "Clock Stuff"
 ///==============================
 // don't mess with this variable//
 int *shmaddr; //
@@ -97,6 +98,7 @@ int getClk() { return *shmaddr; }
  * between them and the clock module. Again, remember that the clock is only
  * emulation!
  */
+
 void initClk() {
   int shmid = shmget(SHKEY, 4, 0444);
   while ((int)shmid == -1) {
@@ -122,3 +124,5 @@ void destroyClk(bool terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
 }
+
+#pragma endregion
