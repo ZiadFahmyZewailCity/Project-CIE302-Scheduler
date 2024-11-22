@@ -28,8 +28,8 @@ struct processData {
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
 // Process Data Loader
-struct processData *load(char *inpFileName) {
-  int count_processes = 0;
+struct processData *load(char *inpFileName, int &count_processes) {
+  count_processes = 0;
   struct processData *p_arr_process;
 
   // Opening File and checking if its been successfully opened
