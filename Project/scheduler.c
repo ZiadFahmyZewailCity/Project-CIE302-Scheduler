@@ -295,7 +295,7 @@ int main(int argc, char * argv[])
     int returnValue;
     struct processData p,highestprio;  
     pid_t pid;
-    while(1)
+    while(flag_proccessSendDown,flag_processDone)
     {
         //Will add arrving messages to prioQUEUE
         returnValue = msgrcv(msgrevGen_Sched_MSGQ,&p,sizeof(p),0,!IPC_NOWAIT);
@@ -316,11 +316,11 @@ int main(int argc, char * argv[])
         }
 
         //will only send once the one process before has terminated 
-        if(flag == 1)
+        if(flag_terminated == 1)
         {
             highestprio = extract_highestpri(pq);
             kill(SIGCONT,highestprio.pid)
-            flag = 0;
+            flag_terminated = 0;
         }   
  
     }
