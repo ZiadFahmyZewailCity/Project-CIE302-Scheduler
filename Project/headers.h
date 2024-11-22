@@ -72,12 +72,13 @@ void print_priQ(PriorityQueue *pq) {
 
 // Extracting highest priority
 struct processData extract_highestpri(PriorityQueue *pq) {
+  struct processData process;
   if (pq->head == NULL) {
-    perror("Priority queue is empty");
-    exit(EXIT_FAILURE);
+    process.pid = -1;
+    return process;
   }
   Node *temp = pq->head;
-  struct processData process = temp->process;
+  process = temp->process;
   pq->head = pq->head->next;
   free(temp);
   return process;

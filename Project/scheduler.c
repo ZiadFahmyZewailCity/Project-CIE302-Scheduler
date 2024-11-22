@@ -120,10 +120,7 @@ void clearResources(int signum) {
   /*msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);*/
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
-  if (runningProcess.id != -1) {
-    kill(runningProcess.pid, SIGINT);
-  }
-  while (pq->head != NULL) {
+  while (runningProcess.pid != -1) {
     runningProcess = extract_highestpri(pq);
     kill(runningProcess.pid, SIGINT);
   }
