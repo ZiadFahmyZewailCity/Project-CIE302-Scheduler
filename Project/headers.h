@@ -28,8 +28,8 @@ struct processData {
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
 // Process Data Loader
-struct processData *load(char *inpFileName, int &count_processes) {
-  count_processes = 0;
+struct processData *load(char *inpFileName, int *count_processes) {
+  *count_processes = 0;
   struct processData *p_arr_process;
 
   // Opening File and checking if its been successfully opened
@@ -49,14 +49,14 @@ struct processData *load(char *inpFileName, int &count_processes) {
 
   // itterating through the file to find number of processes
   while (fgets(buffer, sizeof(buffer), p_file) != NULL) {
-    count_processes += 1;
+    *count_processes += 1;
   }
 
   // once counting is complete we close the file to now read the file data
   fclose(p_file);
 
   // Dyanmic allocation of array for processes
-  p_arr_process = (struct processData *)malloc(count_processes *
+  p_arr_process = (struct processData *)malloc(*count_processes *
                                                sizeof(struct processData));
 
   // Reopening input file
@@ -71,7 +71,7 @@ struct processData *load(char *inpFileName, int &count_processes) {
   fgets(buffer, sizeof(buffer), p_file);
 
   // itterating through file to get data of each
-  for (int i = 0; i < count_processes; i++) {
+  for (int i = 0; i < *count_processes; i++) {
     if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].id,
                &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime,
                &p_arr_process[i].priority) != 4) {
