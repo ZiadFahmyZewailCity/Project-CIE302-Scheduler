@@ -6,6 +6,11 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
 // TODO Initialization
 // 1. Read the input files.
+#pragma region "File Input"
+  int count_processes;
+  struct processData *processDataList = load("processes.txt", count_processes);
+#pragma endregion
+
 // 2. Ask the user for the chosen scheduling algorithm and its parameters, if
 // there are any.
 #pragma region "User Input"
@@ -68,6 +73,7 @@ int main(int argc, char *argv[]) {
   // To get time use this
   int x = getClk();
   printf("current time is %d\n", x);
+
   // TODO Generation Main Loop
   // 5. Create a data structure for processes and provide it with its
   // parameters.
