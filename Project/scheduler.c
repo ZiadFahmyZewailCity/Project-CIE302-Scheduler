@@ -2,6 +2,20 @@
 
 #pragma region Preprocessing
 
+//Flag used to notify scheduler that the process it holds has been terminated
+int processTerminate = 0;
+
+//Number of children
+int numberChildren = 0;
+
+//When processes terminate they will notify the scheduler from here
+void handler_SIGCHILD(int signal)
+{
+    processTerminate = 1;
+    numberChildren -= 1;
+    exit(0);
+}
+
 //Defining priority queue node and structure
 typedef struct Node {
     struct processData process;
