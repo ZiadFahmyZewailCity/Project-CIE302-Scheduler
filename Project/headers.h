@@ -66,6 +66,9 @@ void destroyClk(bool terminateAll)
     }
 }
 
+//This is the code related to the output file still needs to be integrated with the rest of the code
+
+
 
 //WARNING THIS IS A GLOBAL VARIABLE UNTIL A WAY FOR THE SIGNAL AND HANDLER AND OUTPUT FUNTION TO 
 //SEE THIS FILE VARIABLE
@@ -77,7 +80,6 @@ void signalHandler_outputfunctionEXIT(int signal)
     fclose(p_out);
     exit(0);
 }
-
 
 //PCB IS A PLACEHOLDER STRUCT 
 struct PCB
@@ -96,7 +98,6 @@ struct message
     int messageType;
     struct PCB sent_PCB;
 };
-
 
 
 //This acts similar to a server, waits for an update to the process to occur
