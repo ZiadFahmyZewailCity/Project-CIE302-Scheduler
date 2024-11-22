@@ -23,10 +23,145 @@ struct processData {
   unsigned int arrivalTime;
   unsigned int runTime;
   unsigned int priority;
+  unsigned int pid;
 };
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
+#pragma region "Round Robin Algorithm"
+
+#pragma endregion
+
+#pragma region PriorityQueue
+// Defining priority queue node implementation as a linked list
+typedef struct Node {
+  struct processData process;
+  struct Node *next;
+} Node;
+
+// Define the linked-list head for the priority queue
+typedef struct {
+  Node *head;
+} PriorityQueue;
+
+// Defining a constructor for the PQ
+PriorityQueue *initialize_priQ() {
+  PriorityQueue *pq = (PriorityQueue *)malloc(sizeof(PriorityQueue));
+  pq->head = NULL;
+  return pq;
+}
+
+// Defining a constructor for the Node
+Node *create_Node(struct processData process) {
+  Node *new_node = (Node *)malloc(sizeof(Node));
+  new_node->process = process;
+  new_node->next = NULL;
+  return new_node;
+}
+
+// function for printing all the priority queue
+void print_priQ(PriorityQueue *pq) {
+  Node *current = pq->head;
+  printf("PriorityQueue:\n");
+  while (current != NULL) {
+    printf("Process ID: %d, Priority: %d, RunTime: %d\n", current->process.id,
+           current->process.priority, current->process.runTime);
+    current = current->next;
+  }
+}
+
+// Extracting highest priority
+struct processData extract_highestpri(PriorityQueue *pq) {
+  if (pq->head == NULL) {
+    perror("Priority queue is empty");
+    exit(EXIT_FAILURE);
+  }
+  Node *temp = pq->head;
+  struct processData process = temp->process;
+  pq->head = pq->head->next;
+  free(temp);
+  return process;
+}
+
+// Cleaning up the PQ after excution
+void cleanup_priQ(PriorityQueue *pq) {
+  Node *current = pq->head;
+  while (current != NULL) {
+    Node *temp = current;
+    current = current->next;
+    free(temp);
+  }
+  free(pq);
+}
+
+// Inserting one node in the priority queue
+void insert_PHPF_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL || pq->head->process.priority > process.priority) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL &&
+           current->next->process.priority <= process.priority) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+
+void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+#pragma endregion
+
+#pragma region Messagequeue
+// PHPF process handeling
+void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    char strrunTime[6];
+    sprintf(strrunTime, "%d", process.runTime);
+    char *processargs[] = {"./process.out", strrunTime, NULL};
+    execv("./process.out", processargs);
+  } else if (pid > 0) {
+    printf("Process%d (Priority: %d) forked with PID %d .\n", process.id,
+           process.priority);
+    insert_PHPF_priQ(pq, process);
+  } else {
+    perror("Fork Failed");
+    exit(EXIT_FAILURE);
+  }
+}
+// processing each incomming messages holding a process struct to create
+void process_messages(PriorityQueue *pq, int msgid) {
+  Message message;
+  while (1) {
+    if (msgrcv(msgid, &message, sizeof(struct processData), 0, 0) == -1) {
+      perror("Error recieving message");
+      exit(EXIT_FAILURE);
+    }
+    if (message.process.id == 0) {
+      printf("Termination signal received. Exiting...\n");
+      break;
+    }
+    handle_process(pq, message.process);
+    print_priQ(pq);
+  }
+}
+#pragma endregion
 // Process Data Loader
 struct processData *load(char *inpFileName, int *count_processes) {
   *count_processes = 0;

@@ -77,9 +77,12 @@ int main(int argc, char *argv[]) {
   if (SchedulerPID == 0) {
     char strSchedulingAlg[5];
     char strQuantum[5];
+    char strCount_processes[5];
     sprintf(strSchedulingAlg, "%d", schedulingAlg);
     sprintf(strQuantum, "%d", quantum);
-    char *args[] = {"./scheduler.out", strSchedulingAlg, strQuantum, NULL};
+    sprintf(strCount_processes, "%d", count_processes);
+    char *args[] = {"./scheduler.out", strSchedulingAlg, strQuantum,
+                    strCount_processes, NULL};
     execv(args[0], args);
   };
 #pragma endregion
