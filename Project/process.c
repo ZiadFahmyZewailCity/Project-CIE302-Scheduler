@@ -7,7 +7,7 @@
 
 struct processFinalInfo {
     uint id;
-    int mtype;
+    uint msgType;
     uint startTime;
     uint runTime;
     uint remainingTime;
@@ -19,21 +19,20 @@ int remainingTime;
 int termMsgid;
 
 
-void stopProcess();
+void stopProcess(int signum);
 
 struct processFinalInfo processInfo;
 int main(int agrc, char * argv[])
 {
     key_t termKey = ftok("Terminating_Processes",2);
     termMsgid = msgget(termKey, 0666);
-    signal(SIGSTOP, stopProcess);
-
+    signal(SIGUSR1, stopProcess); //use SIGUSR1 as a signal for stopping 
     initClk();
 
+    processInfo.msgType = 1;
     processInfo.startTime = getClk();
     processInfo.runTime = RUN_TIME;
     processInfo.id = PROCESS_ID;
-    processInfo.mtype = 1;
 
     int x = getClk();
     remainingTime = RUN_TIME;
@@ -52,6 +51,8 @@ int main(int agrc, char * argv[])
     return 0;
 }
 
-void stopProcess(){
+void stopProcess(int signum){
+    printf("stopping!");
     msgsnd(termMsgid, &processInfo, sizeof(struct processFinalInfo), 0);
+    raise(SIGSTOP);
 }
