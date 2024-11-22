@@ -17,6 +17,13 @@ typedef short bool;
 
 #define SHKEY 300
 
+struct processData {
+    unsigned int id;
+    unsigned int arrivalTime;
+    unsigned int runTime;
+    unsigned int priority;
+};
+
 
 ///==============================
 //don't mess with this variable//
@@ -65,3 +72,28 @@ void destroyClk(bool terminateAll)
         killpg(getpgrp(), SIGINT);
     }
 }
+
+
+/* -----------------------------priority Queue----------------------------- */
+//Defining priority queue node and structure
+typedef struct Node {
+    struct processData process;
+    struct Node *next;
+} Node;
+
+typedef struct {
+    Node *head;
+} PriorityQueue;
+
+typedef struct {
+    long message_type;
+    struct processData process;
+} Message;
+
+PriorityQueue* init_priQ();
+Node* create_Node(struct processData process);
+void process_messages (PriorityQueue *pq, int msgid);
+void insert_priQ(PriorityQueue *pq, struct processData process);
+void print_priQ(PriorityQueue *pq);
+void handle_process(PriorityQueue *pq, struct processData process);
+void cleanup_priQ(PriorityQueue *pq);
