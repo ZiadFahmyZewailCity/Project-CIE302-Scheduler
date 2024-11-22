@@ -1,5 +1,6 @@
 #include "headers.h"
 
+
 #pragma region PriorityQueue
 //Defining priority queue node implementation as a linked list
 typedef struct Node {
@@ -170,7 +171,65 @@ int main(int argc, char * argv[])
 
     initClk();
 
-    
+
+    Gen_Sched_MSGQ
+  switch (alg) {
+  case SJF:
+
+    int returnValue;
+    struct processData p,highestprio;  
+    pid_t pid;
+    while(1)
+    {
+        //Will add arrving messages to prioQUEUE
+        returnValue = msgrcv(msgrevGen_Sched_MSGQ,&p,sizeof(p),0,!IPC_NOWAIT);
+        if (returnValue = -1){}
+        else
+        {
+            pid = fork();
+            if (pid == 0)
+            {
+                int execv("process%d (Priority: %d), forked with PID %d .\n",processargs);
+                kill(getpid(),SIGTOP);
+            }
+            if (pid == 1)
+            {
+                insert_PHPF_priQ(pq,p);   
+            }
+            //will only send once the one process before has terminated 
+            if(flag == 1)
+            {
+                highestprio = extract_highestpri(pq);
+                kill(SIGCONT,highestprio.pid)
+                flag = 0;
+            }   
+        }
+ 
+    }
+
+
+
+
+    break;
+  case PHPF:
+
+    break;
+  case RR:
+
+    break;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     
     destroyClk(true);
