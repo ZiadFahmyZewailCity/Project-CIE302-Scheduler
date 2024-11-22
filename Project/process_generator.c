@@ -1,12 +1,16 @@
 #include "headers.h"
+#include <stdio.h>
 
 void clearResources(int);
+int Gen_Sched_MSGQ;
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
 // TODO Initialization
 // 1. Read the input files.
 #pragma region "File Input"
+  // 5. Create a data structure for processes and provide it with its
+  // parameters.
   int count_processes;
   struct processData *processDataList = load("processes.txt", &count_processes);
 #pragma endregion
@@ -55,7 +59,6 @@ int main(int argc, char *argv[]) {
 #pragma region "Message Queue and Scheduler Process Creation"
   // Message Queue Creation
   key_t Gen_Sched_Key;
-  int Gen_Sched_MSGQ;
   int Gen_Sched_SND_VAL;
   Gen_Sched_Key = ftok("Gen_Sched_KeyFile", 1);
   Gen_Sched_MSGQ = msgget(Gen_Sched_Key, IPC_CREAT | 0666);
@@ -89,6 +92,8 @@ int main(int argc, char *argv[]) {
   // TODO Generation Main Loop
   int i = 0;
   struct processMsgBuff message;
+
+  // 6. Send the information to the scheduler at the appropriate time.
   while (i < count_processes) {
     x = getClk();
     if (x >= processDataList[i].arrivalTime) {
@@ -100,9 +105,6 @@ int main(int argc, char *argv[]) {
       sleep(1);
     }
   }
-  // 5. Create a data structure for processes and provide it with its
-  // parameters.
-  // 6. Send the information to the scheduler at the appropriate time.
 
   // 7. Clear clock resources
   destroyClk(true);
@@ -110,4 +112,11 @@ int main(int argc, char *argv[]) {
 
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
+  printf("Clearing resources...\n");
+  struct msqid_ds temp;
+  msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);
+  destroyClk(true);
+  // Incomplete
+
+  exit(0);
 }
