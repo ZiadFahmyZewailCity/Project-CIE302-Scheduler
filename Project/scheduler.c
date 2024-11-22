@@ -305,21 +305,23 @@ int main(int argc, char * argv[])
             pid = fork();
             if (pid == 0)
             {
-                int execv("process%d (Priority: %d), forked with PID %d .\n",processargs);
-                kill(getpid(),SIGTOP);
+                int execv("./process.out",processargs);
+                
             }
             if (pid == 1)
-            {
+            {   
+                kill(p.PID,SIGTOP);
                 insert_PHPF_priQ(pq,p);   
             }
-            //will only send once the one process before has terminated 
-            if(flag == 1)
-            {
-                highestprio = extract_highestpri(pq);
-                kill(SIGCONT,highestprio.pid)
-                flag = 0;
-            }   
         }
+
+        //will only send once the one process before has terminated 
+        if(flag == 1)
+        {
+            highestprio = extract_highestpri(pq);
+            kill(SIGCONT,highestprio.pid)
+            flag = 0;
+        }   
  
     }
     break;
