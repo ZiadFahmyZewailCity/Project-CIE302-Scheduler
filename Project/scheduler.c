@@ -4,6 +4,8 @@ enum schedulingAlgorithm alg;
 
 struct PriorityQueue *pq;
 
+struct processData runningProcess;
+
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
 // Number of children
@@ -35,7 +37,6 @@ int main(int argc, char *argv[]) {
   }
 
   struct processMsgBuff RecievedProcess;
-  struct processData runningProcess;
   runningProcess.pid = -1;
 #pragma endregion
 
@@ -119,6 +120,9 @@ void clearResources(int signum) {
   /*msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);*/
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
+  if (runningProcess.id != -1) {
+    kill(runningProcess.pid, SIGINT);
+  }
   while (pq->head != NULL) {
     runningProcess = extract_highestpri(pq);
     kill(runningProcess.pid, SIGINT);

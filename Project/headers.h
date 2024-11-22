@@ -225,7 +225,7 @@ struct processData *load(char *inpFileName, int *count_processes) {
 // process data
 struct processMsgBuff {
   // long mtype;
-  processData process;
+  struct processData process;
 };
 
 #pragma endregion
