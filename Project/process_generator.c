@@ -1,8 +1,9 @@
 #include "headers.h"
-#include <stdio.h>
 
 void clearResources(int);
 int Gen_Sched_MSGQ;
+int SchedulerPID;
+int ClkPID;
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
@@ -45,12 +46,12 @@ int main(int argc, char *argv[]) {
 
   // 3. Initiate and create the scheduler and clock processes.
 #pragma region "Clock Process"
-  int pid = fork();
-  if (pid == -1) {
+  ClkPID = fork();
+  if (ClkPID == -1) {
     perror("Failure in forking");
   }
 
-  if (pid == 0) {
+  if (ClkPID == 0) {
     char *args[] = {"./clk.out", NULL};
     execv(args[0], args);
   };
@@ -68,12 +69,12 @@ int main(int argc, char *argv[]) {
   }
 
   // Process creation
-  pid = fork();
-  if (pid == -1) {
+  SchedulerPID = fork();
+  if (SchedulerPID == -1) {
     perror("Failure in forking");
   }
   //
-  if (pid == 0) {
+  if (SchedulerPID == 0) {
     char strSchedulingAlg[5];
     char strQuantum[5];
     sprintf(strSchedulingAlg, "%d", schedulingAlg);
@@ -115,6 +116,7 @@ void clearResources(int signum) {
   printf("Clearing resources...\n");
   struct msqid_ds temp;
   msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);
+  kill(SchedulerPID, SIGINT);
   destroyClk(true);
   // Incomplete
 
