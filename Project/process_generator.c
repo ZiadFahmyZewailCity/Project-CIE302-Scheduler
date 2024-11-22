@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
 // 1. Read the input files.
 #pragma region "File Input"
   int count_processes;
-  struct processData *processDataList = load("processes.txt", count_processes);
+  struct processData *processDataList = load("processes.txt", &count_processes);
 #pragma endregion
 
 // 2. Ask the user for the chosen scheduling algorithm and its parameters, if
@@ -52,7 +52,19 @@ int main(int argc, char *argv[]) {
   };
 #pragma endregion
 
-#pragma region "Scheduler Process "
+#pragma region "Message Queue and Scheduler Process Creation"
+  // Message Queue Creation
+  key_t Gen_Sched_Key;
+  int Gen_Sched_MSGQ;
+  int Gen_Sched_SND_VAL;
+  Gen_Sched_Key = ftok("Gen_Sched_KeyFile", 1);
+  Gen_Sched_MSGQ = msgget(Gen_Sched_Key, IPC_CREAT | 0666);
+  if (Gen_Sched_MSGQ == -1) {
+    perror("Error in Creating Generator to Scheduler Message Queue");
+    exit(-1);
+  }
+
+  // Process creation
   pid = fork();
   if (pid == -1) {
     perror("Failure in forking");
@@ -78,6 +90,7 @@ int main(int argc, char *argv[]) {
   // 5. Create a data structure for processes and provide it with its
   // parameters.
   // 6. Send the information to the scheduler at the appropriate time.
+
   // 7. Clear clock resources
   destroyClk(true);
 }

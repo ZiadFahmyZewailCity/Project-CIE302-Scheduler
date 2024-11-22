@@ -85,6 +85,12 @@ struct processData *load(char *inpFileName, int *count_processes) {
   return p_arr_process;
 }
 
+// Inter Process Communication
+struct msgbuff {
+  long mtype;
+  processData process;
+};
+
 #pragma region "Clock Stuff"
 ///==============================
 // don't mess with this variable//
