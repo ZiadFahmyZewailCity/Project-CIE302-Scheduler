@@ -67,24 +67,48 @@ void destroyClk(bool terminateAll)
 }
 
 
+//WARNING THIS IS A GLOBAL VARIABLE UNTIL A WAY FOR THE SIGNAL AND HANDLER AND OUTPUT FUNTION TO 
+//SEE THIS FILE VARIABLE
+FILE* p_out;
+
+//WE SHOULD PROBABLY PUT ALL SIGNALS HANDLERS IN A HEADER FILE
+void signalHandler_outputfunctionEXIT(int signal)
+{
+    fclose(p_out);
+    exit(0);
+}
+
+
+//PCB IS A PLACEHOLDER STRUCT 
 struct PCB
 {
     int currentTime;
+    int totalTime;
     int processsID;
     int status;
     int arrivalTime;
     int remainingTime;
-    int totalTimeRunl;
-
+    int totalTimeRun;
 };
+
+struct message
+{
+    int messageType;
+    struct PCB sent_PCB;
+};
+
+
 
 //This acts similar to a server, waits for an update to the process to occur
 //if it does writes the required details in a file
 void output()
 {
+    //WARNING THE SIGNAL WHICH SHOULD BE MAPPED TO OUT SIGNAL HANDLER SHOULD BE A CUSTOM ONE SIGINT
+    //IS A PLACEHOLDER FOR TESTING
+    signal(SIGINT,signalHandler_outputfunctionEXIT);
     key_t queue_PUP_ID;
     int msqPUP_id, rec_PUP;
-
+    
     // Get unique ID for process_update queue
     queue_PUP_ID = ftok("N", 'P'); 
 
@@ -100,24 +124,22 @@ void output()
     // Remove when fully tested
     printf("Output initialized\n");
 
-    // Create file to write output
-    FILE* p_out = fopen("outputfile.txt", "w");
+    p_out = fopen("check.txt", "w");
     if (p_out == NULL)
     {
         perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
         return;
     }
 
-    struct PCB p;  // Assuming the PCB structure is defined somewhere else
+    struct message p;  // Assuming the PCB structure is defined somewhere else
 
     // Print file header
     fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
-    fflush(p_out);
-
+ 
     while (1)
     {
         // Receive message
-        rec_PUP = msgrcv(msqPUP_id, &p, sizeof(p), 0, !IPC_NOWAIT);
+        rec_PUP = msgrcv(msqPUP_id, &p, sizeof(p.sent_PCB), 0,0);
         if (rec_PUP == -1)
         {
             printf("Failed to receive\n");
@@ -126,21 +148,16 @@ void output()
         {
             // REMOVE WHEN DONE
             printf("Message received\n");
+            //Current time should be found from the clock
+            int wait_time = (p.sent_PCB.currentTime - p.sent_PCB.arrivalTime) - p.sent_PCB.totalTimeRun;
+            int remain_time = p.sent_PCB.totalTime - p.sent_PCB.totalTimeRun;
 
-            // Assuming the PCB structure contains the following fields:
-            // - int ID: Process ID
-            // - int Arrival: Arrival time
-            // - int TotalTime: Total time the process requires to run
-            // - int TotalTimeRun: Time the process has already run
-            // - int CurrentTime: Current system time when the message is processed
 
-            int wait_time = (p.CurrentTime - p.Arrival) - p.TotalTimeRun;
-            int remain_time = p.TotalTime - p.TotalTimeRun;
-
+            
             // Print process information to the file
+            
             fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n",
-                    p.CurrentTime, p.ID, p.Arrival, p.TotalTime, remain_time, wait_time);
-            fflush(p_out);
+                   p.sent_PCB.currentTime, p.sent_PCB.processsID, p.sent_PCB.arrivalTime, p.sent_PCB.totalTime, remain_time, wait_time);
         }
     }
 
