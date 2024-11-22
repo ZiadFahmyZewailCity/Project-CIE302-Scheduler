@@ -145,22 +145,6 @@ void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
     exit(EXIT_FAILURE);
   }
 }
-// processing each incomming messages holding a process struct to create
-void process_messages(PriorityQueue *pq, int msgid) {
-  Message message;
-  while (1) {
-    if (msgrcv(msgid, &message, sizeof(struct processData), 0, 0) == -1) {
-      perror("Error recieving message");
-      exit(EXIT_FAILURE);
-    }
-    if (message.process.id == 0) {
-      printf("Termination signal received. Exiting...\n");
-      break;
-    }
-    handle_process(pq, message.process);
-    print_priQ(pq);
-  }
-}
 #pragma endregion
 // Process Data Loader
 struct processData *load(char *inpFileName, int *count_processes) {
