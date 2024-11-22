@@ -164,3 +164,25 @@ void output()
 
     fclose(p_out);
 }
+
+//Version of output function that doesnt work like a sever
+
+//p_out = fopen("check.txt", "w");
+//fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
+//fclose(p_out);
+void output()
+{
+    p_out = fopen("check.txt", "a");
+    if (p_out == NULL)
+    {
+        perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+        return;
+    }
+    int wait_time = (p.currentTime - p..arrivalTime) - p.totalTimeRun;
+    int remain_time = p.totalTime - p.totalTimeRun;
+
+    fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n"
+    ,p.currentTime, p.processsID, p.arrivalTime, p.totalTime, remain_time, wait_time);
+
+    fclose(p_out);
+}
