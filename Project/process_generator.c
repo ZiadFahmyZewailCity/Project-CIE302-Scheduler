@@ -99,9 +99,9 @@ int main(int argc, char *argv[]) {
   message.mtype = 1;
 
   // 6. Send the information to the scheduler at the appropriate time.
-  while (i < count_processes) {
+  while (1) {
     x = getClk();
-    if (x >= processDataList[i].arrivalTime) {
+    if (i < count_processes && x >= processDataList[i].arrivalTime) {
       message.process = processDataList[i];
       Gen_Sched_SND_VAL =
           msgsnd(Gen_Sched_MSGQ, &message, sizeof(message), !IPC_NOWAIT);

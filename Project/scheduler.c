@@ -26,6 +26,7 @@ void handler_SIGCHILD(int signal);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
+  signal(SIGCHLD, handler_SIGCHILD);
   initClk();
   int x = getClk();
 
@@ -89,8 +90,10 @@ int main(int argc, char *argv[]) {
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
+          char strid[6];
           sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
-          char *processargs[] = {"./process.out", strrunTime, NULL};
+          sprintf(strid, "%d", RecievedProcess.process.id);
+          char *processargs[] = {"./process.out", strrunTime, strid, NULL};
           execv("process.out", processargs);
         };
 
@@ -102,8 +105,9 @@ int main(int argc, char *argv[]) {
 
 #pragma region "Round Robin Implementation"
       x = getClk();
-      // If time passed is the quantum or if time is less than quantum, then
-      // continue/start process
+      // If time passed is the quantum, or if time is less than quantum, or if
+      // there is no current running process then continue/start the new process
+      // if there is a waiting process in the queue
       if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
                                runningProcess.pid == -1)) {
         origin = x;

@@ -61,7 +61,8 @@ struct processFinalInfo {
 
 #pragma endregion
 
-#pragma region PriorityQueue
+#pragma region "Priority Queue"
+
 // Defining priority queue node implementation as a linked list
 typedef struct Node {
   struct processData process;
