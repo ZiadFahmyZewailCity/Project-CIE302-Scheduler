@@ -16,6 +16,7 @@ void clearResources(int signum);
 #pragma region "SIGCHLD Handler things"
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
+int processTerminateSJF = 1;
 
 // Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
         int PID = fork();
         if (PID == 0)
         {
-            currentNumberProccess += 1;
+            
             char strrunTime[6];
             char strid[6];
             sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
@@ -93,14 +94,19 @@ int main(int argc, char *argv[]) {
             execv("process.out", processargs);
                 
         }
+        if (PID == 1)
+        {
+            currentNumberProccess += 1;
+            kill(SIGSTP,PID);
+        }
     } 
     //will only send once the one process before has terminated 
-    if(processTerminate == 1 || currentNumberProccess = 0)
+    if(processTerminateSJF == 1 || currentNumberProccess = 0)
     {
         if (currentNumberProccess > 0)
         {
             currentNumberProccess -= 1;
-            processTerminate = 0;
+            processTerminateSJF = 0;
             highestprio = extract_highestpri(pq);
             kill(SIGCONT,highestprio.pid);
         }
@@ -207,6 +213,7 @@ void clearResources(int signum) {
 
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
+  processTerminateSJF = 1;
   /*numberChildren -= 1;*/
   return;
 }
