@@ -287,6 +287,8 @@ void destroyClk(bool terminateAll)
     }
 }
 
+#pragma region outputFunction
+
 FILE* p_out;
 
 void output(struct processData inpProcessData, int remainingTime,int currentTime)
