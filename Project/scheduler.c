@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
     while(1)
 {
     X = getClk();
+    //This variable is a place hold for the remaining time parameter that will be recived form process  
+      int remainingTime = 5;
     //Will add arrving messages to prioQUEUE
     Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, 0);
     if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0)
@@ -98,6 +100,7 @@ int main(int argc, char *argv[]) {
         {
             currentNumberProccess += 1;
             insert_SJF_priQ(pq,RecievedProcess);
+            output(RecievedProcess,remainingTime,x);
             kill(SIGSTP,PID);
         }
     } 
@@ -110,7 +113,7 @@ int main(int argc, char *argv[]) {
             processTerminateSJF = 0;
             highestprio = extract_highestpri(pq);
             kill(SIGCONT,highestprio.pid);
-            output(extract_highestpri)
+            output(highestprio,remainingTime,x);
         }
      }  
 }
