@@ -13,11 +13,231 @@
 
 typedef short bool;
 #define true 1
-#define false 1
+#define false 0
 
 #define SHKEY 300
 
 
+#pragma region "Process data structure"
+struct processData {
+  unsigned int id;
+  unsigned int arrivalTime;
+  unsigned int runTime;
+  unsigned int priority;
+  unsigned int pid;
+};
+
+enum schedulingAlgorithm { SJF = 1, PHPF, RR };
+
+enum state { running = 1, waiting = 2 };
+
+struct PCB {
+  enum state pstate;
+  unsigned int executionTime;
+  unsigned int remainingTime;
+  unsigned int waitingTime;
+};
+
+struct processFinalInfo {
+  uint id;
+  uint msgType;
+  uint startTime;
+  uint runTime;
+  uint remainingTime;
+  uint finishTime;
+};
+
+#pragma endregion
+
+#pragma region "Round Robin Algorithm"
+
+#pragma endregion
+
+#pragma region PriorityQueue
+// Defining priority queue node implementation as a linked list
+typedef struct Node {
+  struct processData process;
+  struct Node *next;
+} Node;
+
+// Define the linked-list head for the priority queue
+typedef struct {
+  Node *head;
+} PriorityQueue;
+
+// Defining a constructor for the PQ
+PriorityQueue *initialize_priQ() {
+  PriorityQueue *pq = (PriorityQueue *)malloc(sizeof(PriorityQueue));
+  pq->head = NULL;
+  return pq;
+}
+
+// Defining a constructor for the Node
+Node *create_Node(struct processData process) {
+  Node *new_node = (Node *)malloc(sizeof(Node));
+  new_node->process = process;
+  new_node->next = NULL;
+  return new_node;
+}
+
+// function for printing all the priority queue
+void print_priQ(PriorityQueue *pq) {
+  Node *current = pq->head;
+  printf("PriorityQueue:\n");
+  while (current != NULL) {
+    printf("Process ID: %d, Priority: %d, RunTime: %d\n", current->process.id,
+           current->process.priority, current->process.runTime);
+    current = current->next;
+  }
+}
+
+// Extracting highest priority
+struct processData extract_highestpri(PriorityQueue *pq) {
+  struct processData process;
+  if (pq->head == NULL) {
+    process.pid = -1;
+    return process;
+  }
+  Node *temp = pq->head;
+  process = temp->process;
+  pq->head = pq->head->next;
+  free(temp);
+  return process;
+}
+
+// Cleaning up the PQ after excution
+void cleanup_priQ(PriorityQueue *pq) {
+  Node *current = pq->head;
+  while (current != NULL) {
+    Node *temp = current;
+    current = current->next;
+    free(temp);
+  }
+  free(pq);
+}
+
+// Inserting one node in the priority queue
+void insert_PHPF_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL || pq->head->process.priority > process.priority) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL &&
+           current->next->process.priority <= process.priority) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+
+void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+#pragma endregion
+
+#pragma region Messagequeue
+// PHPF process handeling
+void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    char strrunTime[6];
+    sprintf(strrunTime, "%d", process.runTime);
+    char *processargs[] = {"./process.out", strrunTime, NULL};
+    execv("./process.out", processargs);
+  } else if (pid > 0) {
+    printf("Process%d (Priority: %d) forked with PID %d .\n", process.id,
+           process.priority);
+    insert_PHPF_priQ(pq, process);
+  } else {
+    perror("Fork Failed");
+    exit(-1);
+  }
+}
+#pragma endregion
+// Process Data Loader
+struct processData *load(char *inpFileName, int *count_processes) {
+  *count_processes = 0;
+  struct processData *p_arr_process;
+
+  // Opening File and checking if its been successfully opened
+  FILE *p_file = fopen(inpFileName, "r");
+  if (p_file == NULL) {
+    perror("ERROR HAS OCCURED IN INPUT FILE OPENINING");
+    fclose(p_file);
+    return NULL;
+  }
+
+  // Buffer needed to store content of line (This is needed even we dont need
+  // the content while counting the number of processes)
+  char buffer[256];
+
+  // skipping past comments line
+  fgets(buffer, sizeof(buffer), p_file);
+
+  // itterating through the file to find number of processes
+  while (fgets(buffer, sizeof(buffer), p_file) != NULL) {
+    *count_processes += 1;
+  }
+
+  // once counting is complete we close the file to now read the file data
+  fclose(p_file);
+
+  // Dyanmic allocation of array for processes
+  p_arr_process = (struct processData *)malloc(*count_processes *
+                                               sizeof(struct processData));
+
+  // Reopening input file
+  p_file = fopen(inpFileName, "r");
+  if (p_file == NULL) {
+    perror("ERROR HAS OCCURED IN INPUT FILE OPENINING _2_");
+    fclose(p_file);
+    return NULL;
+  }
+
+  // skipping past comments line
+  fgets(buffer, sizeof(buffer), p_file);
+
+  // itterating through file to get data of each
+  for (int i = 0; i < *count_processes; i++) {
+    if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].id,
+               &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime,
+               &p_arr_process[i].priority) != 4) {
+      printf("Issue reading from file");
+    };
+  }
+
+  // Close File
+  fclose(p_file);
+
+  return p_arr_process;
+}
+
+
+#pragma region "Inter Process Communication"
+// Structure for Process message buffer, if any additions are need beyond the
+// process data
+struct processMsgBuff {
+  // long mtype;
+  struct processData process;
+};
+
+#pragma endregion
+
+#pragma region "Clock Stuff"
 ///==============================
 //don't mess with this variable//
 int * shmaddr;                 //
@@ -103,4 +323,7 @@ void output(struct PCB inpPCB)
 
     fclose(p_out);
 }
-    
+
+
+#pragma endregion
+
