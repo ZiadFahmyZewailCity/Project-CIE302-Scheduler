@@ -26,6 +26,7 @@ void handler_SIGCHILD(int signal);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
+  signal(SIGCHLD, handler_SIGCHILD);
   initClk();
   int x = getClk();
 
@@ -85,17 +86,20 @@ int main(int argc, char *argv[]) {
 
 #pragma region "Recieving Process Data"
       Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
-                                 sizeof(struct processMsgBuff), 0, 0);
-      if (Gen_Sched_RCV_VAL == -1) {
-        perror("Error recieving process message");
-        exit(-1);
-      }
-      if (Gen_Sched_RCV_VAL != 0) {
+                                 sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
+      // No longer needed
+      /*if (Gen_Sched_RCV_VAL == -1) {*/
+      /*  perror("Error recieving process message");*/
+      /*  exit(-1);*/
+      /*}*/
+      if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
+          char strid[6];
           sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
-          char *processargs[] = {"./process.out", strrunTime, NULL};
+          sprintf(strid, "%d", RecievedProcess.process.id);
+          char *processargs[] = {"./process.out", strrunTime, strid, NULL};
           execv("process.out", processargs);
         };
 
@@ -109,17 +113,22 @@ int main(int argc, char *argv[]) {
       //This variable is a place hold for the remaining time parameter that will be recived form process  
       int remainingTime = 5;
       x = getClk();
-      // If time passed is the quantum or if time is less than quantum, then
-      // continue/start process
-      if (pq->head != NULL && x >= origin + quantum || x < quantum) {
-        origin += 5;
+      // If time passed is the quantum, or if time is less than quantum, or if
+      // there is no current running process then continue/start the new process
+      // if there is a waiting process in the queue
+      if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
+                               runningProcess.pid == -1)) {
+        origin = x;
         if (runningProcess.pid != -1) {
           kill(runningProcess.pid, SIGUSR1);
+
 
           //NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS SHOULD BE OUTPUTED
           output(runningProcess,remainingTime,x);
 
           insert_RR_priQ(pq, runningProcess);
+          // output the state of current running process
+          //
         }
         runningProcess = extract_highestpri(pq);
         kill(runningProcess.pid, SIGCONT);

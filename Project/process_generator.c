@@ -96,22 +96,24 @@ int main(int argc, char *argv[]) {
   // TODO Generation Main Loop
   int i = 0;
   struct processMsgBuff message;
+  message.mtype = 1;
 
   // 6. Send the information to the scheduler at the appropriate time.
-  while (i < count_processes) {
+  while (1) {
     x = getClk();
-    if (x >= processDataList[i].arrivalTime) {
+    if (i < count_processes && x >= processDataList[i].arrivalTime) {
       message.process = processDataList[i];
       Gen_Sched_SND_VAL =
           msgsnd(Gen_Sched_MSGQ, &message, sizeof(message), !IPC_NOWAIT);
       i++;
-    } else {
-      sleep(1);
     }
   }
 
   // 7. Clear clock resources
-  destroyClk(true);
+  destroyClk(1);
+  struct msqid_ds temp;
+  msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);
+  kill(SchedulerPID, SIGINT);
 }
 
 void clearResources(int signum) {
