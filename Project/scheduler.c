@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
   // upon termination release the clock resources
 
   destroyClk(false);
+
 }
 
 #pragma region "Signal Handler Definitions"
