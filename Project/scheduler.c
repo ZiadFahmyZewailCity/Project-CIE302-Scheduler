@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
             processTerminateSJF = 0;
             highestprio = extract_highestpri(pq);
             kill(SIGCONT,highestprio.pid);
+            output(extract_highestpri)
         }
      }  
 }
