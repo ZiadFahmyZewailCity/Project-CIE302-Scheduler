@@ -148,7 +148,34 @@ void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
     current->next = new_node;
   }
 }
+
+
+void insert_SJF_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL || pq->head->process.runTime > process.runTime) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL &&
+           current->next->process.runTime <= process.runTime) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
 #pragma endregion
+
+
+
+
+
+
+
+
+
+
 
 #pragma region Messagequeue
 // PHPF process handeling

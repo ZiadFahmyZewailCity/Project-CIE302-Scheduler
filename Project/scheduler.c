@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
         if (PID == 1)
         {
             currentNumberProccess += 1;
+            insert_SJF_priQ(pq,RecievedProcess);
             kill(SIGSTP,PID);
         }
     } 
