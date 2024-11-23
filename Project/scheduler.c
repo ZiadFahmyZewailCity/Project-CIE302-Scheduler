@@ -6,16 +6,14 @@ struct PriorityQueue *pq;
 
 struct processData runningProcess;
 
+void clearResources(int signum);
+
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
 // Number of children
 /*int numberChildren = 0;*/
 // When processes terminate they will notify the scheduler from here
-void handler_SIGCHILD(int signal) {
-  processTerminate = 1;
-  /*numberChildren -= 1;*/
-  exit(0);
-}
+void handler_SIGCHILD(int signal);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
@@ -125,5 +123,11 @@ void clearResources(int signum) {
     kill(runningProcess.pid, SIGINT);
   }
 
+  exit(0);
+}
+
+void handler_SIGCHILD(int signal) {
+  processTerminate = 1;
+  /*numberChildren -= 1;*/
   exit(0);
 }
