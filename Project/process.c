@@ -13,7 +13,7 @@ struct processFinalInfo {
 };
 
 /* Modify this file as needed*/
-int remainingTime;
+/*int remainingTime;*/
 int termMsgid;
 
 void stopProcess(int signum);
@@ -31,12 +31,12 @@ int main(int agrc, char *argv[]) {
   processInfo.id = PROCESS_ID;
 
   int x = getClk();
-  remainingTime = RUN_TIME;
-  while (remainingTime > 0) {
+  processInfo.remainingTime = RUN_TIME;
+  while (processInfo.remainingTime > 0) {
     if (getClk() != x) {
-      remainingTime--;
+      processInfo.remainingTime--;
       x = getClk();
-      printf("%d\n", remainingTime);
+      printf("%d\n", processInfo.remainingTime);
     }
   }
   destroyClk(false);
