@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
       if (pq->head != NULL && x >= origin + quantum || x < quantum) {
         origin += 5;
         if (runningProcess.pid != -1) {
-          kill(runningProcess.pid, SIGSTOP);
+          kill(runningProcess.pid, SIGUSR1);
           insert_RR_priQ(pq, runningProcess);
         }
         runningProcess = extract_highestpri(pq);
