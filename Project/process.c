@@ -20,9 +20,9 @@ void stopProcess(int signum);
 
 struct processFinalInfo processInfo;
 int main(int agrc, char *argv[]) {
-  key_t termKey = ftok("Terminating_Processes", 2);
-  termMsgid = msgget(termKey, 0666);
   signal(SIGUSR1, stopProcess); // use SIGUSR1 as a signal for stopping
+  key_t termKey = ftok("Terminating_Processes_KeyFile", 2);
+  termMsgid = msgget(termKey, 0666);
   initClk();
 
   processInfo.msgType = 1;

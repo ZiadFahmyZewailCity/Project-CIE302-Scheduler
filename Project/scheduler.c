@@ -6,6 +6,8 @@ struct PriorityQueue *pq;
 
 struct processData runningProcess;
 
+int Terminating_Process_MSGQ;
+
 void clearResources(int signum);
 
 // Flag used to notify scheduler that the process it holds has been terminated
@@ -33,6 +35,11 @@ int main(int argc, char *argv[]) {
     perror("Error in Creating Generator to Scheduler Message Queue");
     exit(-1);
   }
+  key_t Terminating_Process_Key;
+  int Terminating_Process_RCV_VAL;
+  Terminating_Process_Key = ftok("Terminating_Processes_KeyFile", 2);
+  Terminating_Process_MSGQ = msgget(Terminating_Process_Key, IPC_CREAT | 0666);
+  termMsgid = msgget(termKey, 0666);
 
   struct processMsgBuff RecievedProcess;
   runningProcess.pid = -1;
@@ -40,6 +47,7 @@ int main(int argc, char *argv[]) {
 
   PriorityQueue *pq = initialize_priQ();
 
+  // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
 
@@ -105,17 +113,18 @@ int main(int argc, char *argv[]) {
     break;
   }
 
-  // TODO implement the scheduler :)
   // upon termination release the clock resources
 
   destroyClk(false);
 }
 
+#pragma region "Signal Handler Definitions"
+
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
   printf("Clearing scheduler resources...\n");
-  /*struct msqid_ds temp;*/
-  /*msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);*/
+  struct msqid_ds temp;
+  msgctl(Terminating_Process_MSGQ, IPC_RMID, &temp);
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
   while (runningProcess.pid != -1) {
