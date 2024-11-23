@@ -67,24 +67,6 @@ void destroyClk(bool terminateAll)
 }
 
 
-//PCB IS A PLACEHOLDER STRUCT 
-struct PCB
-{
-    int currentTime;
-    int totalTime;
-    int processsID;
-    int status;
-    int arrivalTime;
-    int remainingTime;
-    int totalTimeRun;
-};
-
-struct message
-{
-    int messageType;
-    struct PCB sent_PCB;
-};
-
 
 //p_out = fopen("check.txt", "w");
 //fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
