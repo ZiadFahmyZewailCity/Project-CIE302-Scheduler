@@ -20,6 +20,8 @@ int processTerminate = 0;
 // Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
 
+// When processes terminate they will notify the scheduler from here
+void handler_SIGCHILD(int signal);
 #pragma endregion
 
 int main(int argc, char *argv[]) {
@@ -70,6 +72,8 @@ int main(int argc, char *argv[]) {
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
+
+  int currentNumberProccess = 0;
     while(1)
 {
     X = getClk();
@@ -80,6 +84,7 @@ int main(int argc, char *argv[]) {
         int PID = fork();
         if (PID == 0)
         {
+            currentNumberProccess += 1;
             char strrunTime[6];
             char strid[6];
             sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
@@ -89,13 +94,16 @@ int main(int argc, char *argv[]) {
                 
         }
     } 
-    msgrcv(Terminating_Process_MSGQ,)
     //will only send once the one process before has terminated 
-    if()
+    if(processTerminate == 1 || currentNumberProccess = 0)
     {
-        highestprio = extract_highestpri(pq);
-        kill(SIGCONT,highestprio.pid)
-        flag_terminated = 0;
+        if (currentNumberProccess > 0)
+        {
+            currentNumberProccess -= 1;
+            processTerminate = 0;
+            highestprio = extract_highestpri(pq);
+            kill(SIGCONT,highestprio.pid);
+        }
      }  
 }
 
