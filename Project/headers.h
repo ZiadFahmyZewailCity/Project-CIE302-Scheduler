@@ -287,11 +287,8 @@ void destroyClk(bool terminateAll)
     }
 }
 
+FILE* p_out;
 
-
-//p_out = fopen("check.txt", "w");
-//fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
-//fclose(p_out);
 void output(struct processData inpProcessData, int remainingTime,int currentTime)
 {
     p_out = fopen("check.txt", "a");
