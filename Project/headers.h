@@ -29,7 +29,7 @@ struct processData {
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
-enum state { running = 1, waiting = 2 };
+enum state { running = 1, waiting = 2, started = 3, finished = 4 };
 
 struct PCB {
   enum state pstate;
@@ -291,7 +291,7 @@ void destroyClk(bool terminateAll)
 //p_out = fopen("check.txt", "w");
 //fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
 //fclose(p_out);
-void output(struct PCB inpPCB)
+void output(struct processData inpProcessData, enum state processState, int remainingTime,int currentTime)
 {
     p_out = fopen("check.txt", "a");
     if (p_out == NULL)
@@ -301,23 +301,22 @@ void output(struct PCB inpPCB)
     }
  
         
-    int wait_time = (inpPCB.currentTime - inpPCB.arrivalTime) - inpPCB.totalTimeRun;
-    int remain_time = inpPCB.totalTime - inpPCB.totalTimeRun;
+    int wait_time = (currentTime - inpProcessData.arrivalTime) - inpProcessData.runTime;
 
     //This checks if the update is that the process is terminated to print the extra parameters, 
     //number should be equal to the enum of terminated status
-    if(inpPCB.status == 5)
+    if(state == finished)
     {
-        int turnAround = inpPCB.currentTime-inpPCB.arrivalTime;
-        int weightedTurnAround = (inpPCB.currentTime-inpPCB.arrivalTime)/inpPCB.totalTimeRun;
+        int turnAround = currentTime - inpProcessData.arrivalTime;
+        int weightedTurnAround = (currentTime - inpProcessData.arrivalTime)/ inpProcessData.runTime;
 
-        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n" \tTA %d \tWTA %d,
-        ,inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time,turnAround,weightedTurnAround);
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n \tTA %d \tWTA %d",
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time, turnAround, weightedTurnAround);
     }
     else
     {
-        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n", 
-        inpPCB.currentTime, inpPCB.processsID, inpPCB.arrivalTime, inpPCB.totalTime, remain_time, wait_time);
+        fprintf(p_out, "At \ttime %d \tprocess %d \tstate arr %d \ttotal %d \tremain %d \twait %d\n" 
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
 
     }
 
