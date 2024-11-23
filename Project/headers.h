@@ -37,6 +37,15 @@ struct PCB {
   unsigned int waitingTime;
 };
 
+struct processFinalInfo {
+  uint id;
+  uint msgType;
+  uint startTime;
+  uint runTime;
+  uint remainingTime;
+  uint finishTime;
+};
+
 #pragma endregion
 
 #pragma region "Round Robin Algorithm"

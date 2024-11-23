@@ -3,15 +3,6 @@
 #define RUN_TIME atoi(argv[1])
 #define PROCESS_ID atoi(argv[2])
 
-struct processFinalInfo {
-  uint id;
-  uint msgType;
-  uint startTime;
-  uint runTime;
-  uint remainingTime;
-  uint finishTime;
-};
-
 /* Modify this file as needed*/
 /*int remainingTime;*/
 int termMsgid;

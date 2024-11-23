@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
   unsigned int quantum = atoi(argv[2]);
 
 #pragma region "Initializing message queue"
+#pragma region "Generator to Scheduler Message Queue"
   key_t Gen_Sched_Key;
   int Gen_Sched_RCV_VAL;
   int Gen_Sched_MSGQ;
@@ -42,14 +43,22 @@ int main(int argc, char *argv[]) {
     perror("Error in Creating Generator to Scheduler Message Queue");
     exit(-1);
   }
+#pragma endregion
+
+#pragma region "Terminiating Process Message Queue"
   key_t Terminating_Process_Key;
   int Terminating_Process_RCV_VAL;
   Terminating_Process_Key = ftok("Terminating_Processes_KeyFile", 2);
   Terminating_Process_MSGQ = msgget(Terminating_Process_Key, IPC_CREAT | 0666);
-  termMsgid = msgget(termKey, 0666);
+  if (Terminating_Process_MSGQ == -1) {
+    perror("Error in Creating Generator to Scheduler Message Queue");
+    exit(-1);
+  }
+#pragma endregion
 
   struct processMsgBuff RecievedProcess;
   runningProcess.pid = -1;
+  struct processFinalInfo Process_Info;
 #pragma endregion
 
   PriorityQueue *pq = initialize_priQ();
