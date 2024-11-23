@@ -20,8 +20,6 @@ int processTerminate = 0;
 // Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
 
-// When processes terminate they will notify the scheduler from here
-void handler_SIGCHILD(int signal);
 #pragma endregion
 
 int main(int argc, char *argv[]) {
@@ -72,6 +70,34 @@ int main(int argc, char *argv[]) {
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
+    while(1)
+{
+    X = getClk();
+    //Will add arrving messages to prioQUEUE
+    Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, 0);
+    if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0)
+    {
+        int PID = fork();
+        if (PID == 0)
+        {
+            char strrunTime[6];
+            char strid[6];
+            sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
+            sprintf(strid, "%d", RecievedProcess.process.id);
+            char *processargs[] = {"./process.out", strrunTime, strid, NULL};
+            execv("process.out", processargs);
+                
+        }
+    } 
+    msgrcv(Terminating_Process_MSGQ,)
+    //will only send once the one process before has terminated 
+    if()
+    {
+        highestprio = extract_highestpri(pq);
+        kill(SIGCONT,highestprio.pid)
+        flag_terminated = 0;
+     }  
+}
 
     break;
   case PHPF:
