@@ -64,6 +64,12 @@ int main(int argc, char *argv[]) {
 
   PriorityQueue *pq = initialize_priQ();
 
+
+    
+    p_out = fopen("check.txt", "w");
+    fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
+    fclose(p_out);
+
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
@@ -104,6 +110,8 @@ int main(int argc, char *argv[]) {
 #pragma endregion
 
 #pragma region "Round Robin Implementation"
+      //This variable is a place hold for the remaining time parameter that will be recived form process  
+      int remainingTime = 5;
       x = getClk();
       // If time passed is the quantum, or if time is less than quantum, or if
       // there is no current running process then continue/start the new process
@@ -113,17 +121,29 @@ int main(int argc, char *argv[]) {
         origin = x;
         if (runningProcess.pid != -1) {
           kill(runningProcess.pid, SIGUSR1);
+
+
+          //NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS SHOULD BE OUTPUTED
+          output(runningProcess,remainingTime,x);
+
           insert_RR_priQ(pq, runningProcess);
           // output the state of current running process
           //
         }
         runningProcess = extract_highestpri(pq);
         kill(runningProcess.pid, SIGCONT);
+
+        //Outputs the data when process continues or starts
+        output(runningProcess,remainingTime,x);
       }
 
       if (processTerminate == 1) {
         if (pq->head != NULL) {
           runningProcess = extract_highestpri(pq);
+
+          //NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS SHOULD BE OUTPUTED
+          output(runningProcess,remainingTime,x);
+
           kill(runningProcess.pid, SIGCONT);
         } else {
           runningProcess.pid = -1;
@@ -140,6 +160,7 @@ int main(int argc, char *argv[]) {
   // upon termination release the clock resources
 
   destroyClk(false);
+
 }
 
 #pragma region "Signal Handler Definitions"

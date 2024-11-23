@@ -1,21 +1,22 @@
-#include <signal.h>
-#include <stdio.h> //if you don't use scanf/printf change this include
-#include <stdlib.h>
+#include <stdio.h>      //if you don't use scanf/printf change this include
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <sys/sem.h>
+#include <sys/msg.h>
 #include <sys/wait.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 typedef short bool;
 #define true 1
 #define false 0
 
 #define SHKEY 300
+
 
 #pragma region "Process data structure"
 struct processData {
@@ -24,11 +25,12 @@ struct processData {
   unsigned int runTime;
   unsigned int priority;
   unsigned int pid;
+  enum state pstate;
 };
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
-enum state { running = 1, waiting = 2 };
+enum state { running = 1, waiting = 2, started = 3, finished = 4 };
 
 struct PCB {
   enum state pstate;
@@ -253,43 +255,108 @@ struct processData *load(char *inpFileName, int *count_processes) {
   return p_arr_process;
 }
 
+
 #pragma region "Clock Stuff"
 ///==============================
-// don't mess with this variable//
-int *shmaddr; //
+//don't mess with this variable//
+int * shmaddr;                 //
 //===============================
 
-int getClk() { return *shmaddr; }
+
+
+int getClk()
+{
+    return *shmaddr;
+}
+
 
 /*
- * All process call this function at the beginning to establish communication
- * between them and the clock module. Again, remember that the clock is only
- * emulation!
- */
-void initClk() {
-  int shmid = shmget(SHKEY, 4, 0444);
-  while ((int)shmid == -1) {
-    // Make sure that the clock exists
-    printf("Wait! The clock not initialized yet!\n");
-    sleep(1);
-    shmid = shmget(SHKEY, 4, 0444);
-  }
-  shmaddr = (int *)shmat(shmid, (void *)0, 0);
+ * All process call this function at the beginning to establish communication between them and the clock module.
+ * Again, remember that the clock is only emulation!
+*/
+void initClk()
+{
+    int shmid = shmget(SHKEY, 4, 0444);
+    while ((int)shmid == -1)
+    {
+        //Make sure that the clock exists
+        printf("Wait! The clock not initialized yet!\n");
+        sleep(1);
+        shmid = shmget(SHKEY, 4, 0444);
+    }
+    shmaddr = (int *) shmat(shmid, (void *)0, 0);
 }
+
 
 /*
  * All process call this function at the end to release the communication
  * resources between them and the clock module.
  * Again, Remember that the clock is only emulation!
- * Input: terminateAll: a flag to indicate whether that this is the end of
- * simulation. It terminates the whole system and releases resources.
- */
+ * Input: terminateAll: a flag to indicate whether that this is the end of simulation.
+ *                      It terminates the whole system and releases resources.
+*/
 
-void destroyClk(bool terminateAll) {
-  shmdt(shmaddr);
-  if (terminateAll) {
-    killpg(getpgrp(), SIGINT);
-  }
+void destroyClk(bool terminateAll)
+{
+    shmdt(shmaddr);
+    if (terminateAll)
+    {
+        killpg(getpgrp(), SIGINT);
+    }
 }
 
+#pragma region outputFunction
+
+FILE* p_out;
+
+void output(struct processData inpProcessData, int remainingTime,int currentTime)
+{
+    p_out = fopen("check.txt", "a");
+    if (p_out == NULL)
+    {
+        perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+        return;
+    }
+ 
+        
+    int wait_time = (currentTime - inpProcessData.arrivalTime) - inpProcessData.runTime;
+
+    //This checks if the update is that the process is terminated to print the extra parameters, 
+    //number should be equal to the enum of terminated status
+    if(inpProcessData.pstate == finished)
+    {
+        int turnAround = currentTime - inpProcessData.arrivalTime;
+        int weightedTurnAround = (currentTime - inpProcessData.arrivalTime)/ inpProcessData.runTime;
+
+        fprintf(p_out, "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain %d \twait %d\n \tTA %d \tWTA %d",
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time, turnAround, weightedTurnAround);
+    }
+    else
+    {
+        switch (inpProcessData.pstate)
+        {
+        case (started)
+            fprintf(p_out, "At \ttime %d \tprocess %d \tstarted\t arr %d \ttotal %d \tremain %d \twait %d\n" 
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
+        break;
+        
+        case (running)
+            fprintf(p_out, "At \ttime %d \tprocess %d \tresumed\t arr %d \ttotal %d \tremain %d \twait %d\n" 
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
+        
+        break;
+        case (waiting)
+            fprintf(p_out, "At \ttime %d \tprocess %d \tstopped arr %d \ttotal %d \tremain %d \twait %d\n" 
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
+        break;
+        
+        default:
+            break;
+    }
+
+    fclose(p_out);
+}
+
+
 #pragma endregion
+
