@@ -229,7 +229,7 @@ struct processData *load(char *inpFileName, int *count_processes) {
 // Structure for Process message buffer, if any additions are need beyond the
 // process data
 struct processMsgBuff {
-  // long mtype;
+  long mtype;
   struct processData process;
 };
 

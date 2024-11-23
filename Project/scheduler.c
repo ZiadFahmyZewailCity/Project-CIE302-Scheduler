@@ -79,12 +79,13 @@ int main(int argc, char *argv[]) {
 
 #pragma region "Recieving Process Data"
       Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
-                                 sizeof(struct processMsgBuff), 0, 0);
-      if (Gen_Sched_RCV_VAL == -1) {
-        perror("Error recieving process message");
-        exit(-1);
-      }
-      if (Gen_Sched_RCV_VAL != 0) {
+                                 sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
+      // No longer needed
+      /*if (Gen_Sched_RCV_VAL == -1) {*/
+      /*  perror("Error recieving process message");*/
+      /*  exit(-1);*/
+      /*}*/
+      if (Gen_Sched_RCV_VAL == -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
