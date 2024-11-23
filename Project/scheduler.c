@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
       /*  perror("Error recieving process message");*/
       /*  exit(-1);*/
       /*}*/
-      if (Gen_Sched_RCV_VAL == -1 && Gen_Sched_RCV_VAL != 0) {
+      if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
@@ -104,11 +104,14 @@ int main(int argc, char *argv[]) {
       x = getClk();
       // If time passed is the quantum or if time is less than quantum, then
       // continue/start process
-      if (pq->head != NULL && x >= origin + quantum || x < quantum) {
-        origin += 5;
+      if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
+                               runningProcess.pid == -1)) {
+        origin = x;
         if (runningProcess.pid != -1) {
-          kill(runningProcess.pid, SIGSTOP);
+          kill(runningProcess.pid, SIGUSR1);
           insert_RR_priQ(pq, runningProcess);
+          // output the state of current running process
+          //
         }
         runningProcess = extract_highestpri(pq);
         kill(runningProcess.pid, SIGCONT);

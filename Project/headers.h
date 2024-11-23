@@ -37,15 +37,24 @@ struct PCB {
   unsigned int waitingTime;
 };
 
-struct processFinalInfo {
-  uint id;
-  uint msgType;
-  uint startTime;
-  uint runTime;
-  uint remainingTime;
-  uint finishTime;
+#pragma endregion
+
+#pragma region "Inter Process Communication"
+// Structure for Process message buffer, if any additions are need beyond the
+// process data
+struct processMsgBuff {
+  long mtype;
+  struct processData process;
 };
 
+struct processFinalInfo {
+  unsigned int msgType;
+  unsigned int id;
+  unsigned int startTime;
+  unsigned int runTime;
+  unsigned int remainingTime;
+  unsigned int finishTime;
+};
 #pragma endregion
 
 #pragma region "Round Robin Algorithm"
@@ -132,6 +141,22 @@ void insert_PHPF_priQ(PriorityQueue *pq, struct processData process) {
   }
 }
 
+void insert_SJF_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL || pq->head->process.runTime > process.runTime) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL &&
+           current->next->process.runTime <= process.runTime) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+
 void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
   Node *new_node = create_Node(process);
   if (pq->head == NULL) {
@@ -146,6 +171,7 @@ void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
     current->next = new_node;
   }
 }
+
 #pragma endregion
 
 #pragma region Messagequeue
@@ -167,6 +193,7 @@ void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
   }
 }
 #pragma endregion
+
 // Process Data Loader
 struct processData *load(char *inpFileName, int *count_processes) {
   *count_processes = 0;
@@ -224,16 +251,6 @@ struct processData *load(char *inpFileName, int *count_processes) {
 
   return p_arr_process;
 }
-
-#pragma region "Inter Process Communication"
-// Structure for Process message buffer, if any additions are need beyond the
-// process data
-struct processMsgBuff {
-  long mtype;
-  struct processData process;
-};
-
-#pragma endregion
 
 #pragma region "Clock Stuff"
 ///==============================
