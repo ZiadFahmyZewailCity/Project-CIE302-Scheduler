@@ -17,7 +17,7 @@ typedef short bool;
 
 #define SHKEY 300
 
-// Process data structure
+#pragma region "Process data structure"
 struct processData {
   unsigned int id;
   unsigned int arrivalTime;
@@ -36,6 +36,8 @@ struct PCB {
   unsigned int remainingTime;
   unsigned int waitingTime;
 };
+
+#pragma endregion
 
 #pragma region "Round Robin Algorithm"
 
@@ -152,7 +154,7 @@ void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
     insert_PHPF_priQ(pq, process);
   } else {
     perror("Fork Failed");
-    exit(EXIT_FAILURE);
+    exit(-1);
   }
 }
 #pragma endregion

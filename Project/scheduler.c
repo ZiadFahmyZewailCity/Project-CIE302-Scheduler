@@ -1,5 +1,6 @@
 #include "headers.h"
 
+#pragma region "Static variables needed to clear resources"
 enum schedulingAlgorithm alg;
 
 struct PriorityQueue *pq;
@@ -10,12 +11,18 @@ int Terminating_Process_MSGQ;
 
 void clearResources(int signum);
 
+#pragma endregion
+
+#pragma region "SIGCHLD Handler things"
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
-// Number of children
+
+// Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
+
 // When processes terminate they will notify the scheduler from here
 void handler_SIGCHILD(int signal);
+#pragma endregion
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
@@ -138,5 +145,7 @@ void clearResources(int signum) {
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
   /*numberChildren -= 1;*/
-  exit(0);
+  return;
 }
+
+#pragma endregion
