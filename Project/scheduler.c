@@ -77,11 +77,11 @@ int main(int argc, char *argv[]) {
   int currentNumberProccess = 0;
     while(1)
 {
-    X = getClk();
+    x = getClk();
     //This variable is a place hold for the remaining time parameter that will be recived form process  
       int remainingTime = 5;
     //Will add arrving messages to prioQUEUE
-    Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, 0);
+    Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
     if (Gen_Sched_RCV_VAL != -1)
     {
         int PID = fork();
@@ -111,8 +111,8 @@ int main(int argc, char *argv[]) {
         {
             currentNumberProccess -= 1;
             processTerminateSJF = 0;
-            highestprio = extract_highestpri(pq);
-            kill(SIGCONT,highestprio.pid);
+            processData highestprio = extract_highestpri(pq);
+            kill(highestprio.pid,SIGCONT,);
             output(highestprio,remainingTime,x);
         }
      }  
