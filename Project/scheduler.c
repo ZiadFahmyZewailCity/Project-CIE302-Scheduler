@@ -35,7 +35,7 @@ void handler_SIGCHILD(int signal);
 int main(int argc, char *argv[]) {
 #pragma region "initialization"
   signal(SIGINT, clearResources);
-  signal(SIGCHLD, handler_SIGCHILD);
+  signal(SIGUSR2, handler_SIGCHILD);
   initClk();
   x = getClk();
 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
           char *processargs[] = {"./process.out", strrunTime, strid, NULL};
           execv("process.out", processargs);
         };
-        kill(PID, SIGUSR1);
+        /*kill(PID, SIGSTOP);*/
 
         // Initializing some variables for process in the process table
         ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
@@ -168,8 +168,8 @@ int main(int argc, char *argv[]) {
       // Instead, if time passed is the quantum, or if time is less than
       // quantum, or if there is no current running process then continue/start
       // the new process if there is a waiting process in the queue
-      else if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
-                                    runningProcess.pid == -1)) {
+      else if (pq->head != NULL &&
+               (x >= (origin + quantum) || runningProcess.pid == -1)) {
         origin = x;
         // If runningProcess pid is not -1, that means there is a current
         // running process, so terminate current running process and put back

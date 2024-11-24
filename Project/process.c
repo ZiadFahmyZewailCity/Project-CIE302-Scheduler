@@ -12,12 +12,11 @@ void stopProcess(int signum);
 struct processStateInfoMsgBuff processInfo;
 
 int main(int agrc, char *argv[]) {
+  raise(SIGSTOP);
   signal(SIGUSR1, stopProcess); // use SIGUSR1 as a signal for stopping
   key_t termKey = ftok("Terminating_Processes_KeyFile", 2);
   termMsgid = msgget(termKey, 0666);
   initClk();
-
-  // raise(SIGSTOP);
 
   processInfo.msgType = 1;
   processInfo.startTime = getClk();
@@ -37,6 +36,7 @@ int main(int agrc, char *argv[]) {
 
   processInfo.finishTime = x;
   msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
+  raise(getppid(), SIGUSR2);
   return 0;
 }
 
