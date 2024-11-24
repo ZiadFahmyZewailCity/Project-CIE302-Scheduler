@@ -21,7 +21,7 @@ typedef short bool;
 enum state { running = 1, waiting = 2 };
 
 struct processData {
-  unsigned int id;
+  int id;
   unsigned int arrivalTime;
   unsigned int runTime;
   unsigned int priority;
@@ -50,7 +50,7 @@ struct processMsgBuff {
 };
 
 struct processStateInfoMsgBuff {
-  unsigned int msgType;
+  long  mtype;
   unsigned int id;
   unsigned int arrivalTime;
   unsigned int startTime;

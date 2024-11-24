@@ -11,7 +11,6 @@ struct processStateInfoMsgBuff current_process_info;
 
 int Terminating_Process_MSGQ;
 int Terminating_Process_RCV_VAL;
-struct processStateInfoMsgBuff *ProcessTable;
 
 int x;
 
@@ -45,8 +44,6 @@ int main(int argc, char *argv[]) {
 
 #pragma endregion
 
-  ProcessTable = (struct processStateInfoMsgBuff *)malloc(
-      countProcesses * sizeof(struct processStateInfoMsgBuff));
 
 #pragma region "Initializing message queue"
 #pragma region "Generator to Scheduler Message Queue"
@@ -63,7 +60,7 @@ int main(int argc, char *argv[]) {
 
 #pragma region "Terminiating Process Message Queue"
   key_t Terminating_Process_Key;
-  Terminating_Process_Key = ftok("Terminating_Processes_KeyFile", 2);
+  Terminating_Process_Key = ftok("Term_Proc_KeyFile", 1);
   Terminating_Process_MSGQ = msgget(Terminating_Process_Key, IPC_CREAT | 0666);
   if (Terminating_Process_MSGQ == -1) {
     perror("Error in Creating Generator to Scheduler Message Queue");
@@ -98,6 +95,7 @@ int main(int argc, char *argv[]) {
     int origin = 0;
     while (1) {
 
+          printf(" here\n");
 #pragma region "Recieving Process Data"
       // Check message queue for processes
       Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
@@ -105,6 +103,7 @@ int main(int argc, char *argv[]) {
 
       // If process found, generate process then add it to queue
       if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
+                     printf("recieved new proc\n\n");
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
@@ -117,15 +116,6 @@ int main(int argc, char *argv[]) {
         /*kill(PID, SIGSTOP);*/
 
         // Initializing some variables for process in the process table
-        ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
-        ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
-            RecievedProcess.process.arrivalTime;
-        ProcessTable[RecievedProcess.process.id - 1].runTime =
-            RecievedProcess.process.runTime;
-        ProcessTable[RecievedProcess.process.id - 1].remainingTime =
-            RecievedProcess.process.runTime;
-        ProcessTable[RecievedProcess.process.id - 1].id =
-            RecievedProcess.process.id;
         // Adding process to queue
         RecievedProcess.process.pid = PID;
         insert_RR_priQ(pq, RecievedProcess.process);
@@ -137,31 +127,38 @@ int main(int argc, char *argv[]) {
       // will be recived form process
       x = getClk();
 
+          printf("entered alg\n");
       // If current process is terminating, remove the current process and
       // switch state
+      //sleep(1);
       if (processTerminate == 1) {
+          printf("entered here\n");
         /*ProcessTable[current_process_info.id - 1] = current_process_info;*/
         // If there's something in queue, then set running process to the
         // extracted process from the queue
         if (pq->head != NULL) {
           runningProcess = extract_highestpri(pq);
+          printf("im here\n");
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
-          current_process_info = ProcessTable[runningProcess.id - 1];
-          current_process_info.pstate = running;
-          output(current_process_info, x);
+          //current_process_info = ProcessTable[runningProcess.id - 1];
+          //current_process_info.pstate = running;
+          //output(current_process_info, x);
 
-          kill(runningProcess.pid, SIGCONT);
+          //kill(runningProcess.pid, SIGCONT);
         }
 
         // If there's nothing in queue, then set running pid to -1 so the
         // scheduler knows there is no current running process
         else {
           runningProcess.pid = -1;
+          printf("im hereagaint\n");
         }
 
+          printf("not terminated\n");
         // set flag back to 0
+          printf("im here3[\n");
         processTerminate = 0;
       }
 
@@ -170,39 +167,50 @@ int main(int argc, char *argv[]) {
       // the new process if there is a waiting process in the queue
       else if (pq->head != NULL &&
                (x >= (origin + quantum) || runningProcess.pid == -1)) {
+                     printf("hereeeeeeeeeeee\n\n");
         origin = x;
         // If runningProcess pid is not -1, that means there is a current
         // running process, so terminate current running process and put back
         // into queue
         if (runningProcess.pid != -1) {
           // stop current process
-          kill(runningProcess.pid, SIGUSR1);
+          //kill(runningProcess.pid, SIGUSR1);
+          
+                     printf("signal ended\n\n");
           // recieve process info
-          Terminating_Process_RCV_VAL =
-              msgrcv(Terminating_Process_MSGQ, &current_process_info,
-                     sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+          //Terminating_Process_RCV_VAL =
+             // msgrcv(Terminating_Process_MSGQ, &current_process_info,
+               //      sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+           //          printf("recieved\n\n");
           // store process info in process table
-          ProcessTable[runningProcess.id - 1] = current_process_info;
+          //ProcessTable[runningProcess.id - 1] = current_process_info;
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
-          output(current_process_info, x);
+          //output(current_process_info, x);
 
           // put process back into queue
           insert_RR_priQ(pq, runningProcess);
           // output the state of current running process
           //
         }
+        printf("process number %d is now stopping\n",runningProcess.id);
+        print_priQ(pq);
         runningProcess = extract_highestpri(pq);
+        //kill(runningProcess.pid, SIGCONT);
+        printf("process number %d is now running\n",runningProcess.id);
+        printf("time is %d \n",x);
+        printf("origin is :%d\n",origin);
 
-        ProcessTable[runningProcess.id - 1].pstate = running;
+        //ProcessTable[runningProcess.id - 1].pstate = running;
 
         kill(runningProcess.pid, SIGCONT);
-        current_process_info = ProcessTable[runningProcess.id - 1];
+        //current_process_info = ProcessTable[runningProcess.id - 1];
 
         // Outputs the data when process continues or starts
-        output(current_process_info, x);
+        //output(current_process_info, x);
       }
+      sleep(1);
 
 #pragma endregion
     }
@@ -222,12 +230,12 @@ void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
   printf("Clearing scheduler resources...\n");
   struct msqid_ds temp;
-  msgctl(Terminating_Process_MSGQ, IPC_RMID, &temp);
+  msgctl(Terminating_Process_MSGQ, IPC_RMID, NULL);
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
   while (runningProcess.pid != -1) {
-    runningProcess = extract_highestpri(pq);
     kill(runningProcess.pid, SIGINT);
+    runningProcess = extract_highestpri(pq);
   }
 
   exit(0);
@@ -236,11 +244,17 @@ void clearResources(int signum) {
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
   /*numberChildren -= 1;*/
+  struct processStateInfoMsgBuff temp;
   Terminating_Process_RCV_VAL =
-      msgrcv(Terminating_Process_MSGQ, &current_process_info,
-             sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
-  output(current_process_info, x);
-  ProcessTable[current_process_info.id - 1] = current_process_info;
+      msgrcv(Terminating_Process_MSGQ, &temp,
+             sizeof(struct processStateInfoMsgBuff), 2, !IPC_NOWAIT);
+
+  printf("recieved\n\n");
+
+  //printf("Terminated this one process, the remaining time is %d\n",temp.remainingTime);
+  //output(temp, x);
+  //ProcessTable[temp.id - 1] = temp;
+  //printf("Terminated this one process, the remaining time is %d\n",temp.remainingTime);
   return;
 }
 
