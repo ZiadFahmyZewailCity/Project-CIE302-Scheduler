@@ -11,6 +11,7 @@ struct processStateInfoMsgBuff current_process_info;
 
 int Terminating_Process_MSGQ;
 int Terminating_Process_RCV_VAL;
+struct processStateInfoMsgBuff *ProcessTable;
 
 void clearResources(int signum);
 
@@ -42,7 +43,8 @@ int main(int argc, char *argv[]) {
 
 #pragma endregion
 
-  struct processStateInfoMsgBuff ProcessTable[countProcesses];
+  ProcessTable = (struct processStateInfoMsgBuff *)malloc(
+      countProcesses * sizeof(struct processStateInfoMsgBuff));
 
 #pragma region "Initializing message queue"
 #pragma region "Generator to Scheduler Message Queue"
@@ -119,6 +121,8 @@ int main(int argc, char *argv[]) {
             RecievedProcess.process.runTime;
         ProcessTable[RecievedProcess.process.id - 1].remainingTime =
             RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].id =
+            RecievedProcess.process.id;
         // Adding process to queue
         RecievedProcess.process.pid = PID;
         insert_RR_priQ(pq, RecievedProcess.process);
@@ -133,6 +137,7 @@ int main(int argc, char *argv[]) {
       // If current process is terminating, remove the current process and
       // switch state
       if (processTerminate == 1) {
+        /*ProcessTable[current_process_info.id - 1] = current_process_info;*/
         // If there's something in queue, then set running process to the
         // extracted process from the queue
         if (pq->head != NULL) {
@@ -230,6 +235,8 @@ void handler_SIGCHILD(int signal) {
   Terminating_Process_RCV_VAL =
       msgrcv(Terminating_Process_MSGQ, &current_process_info,
              sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+  output(current_process_info, x);
+  ProcessTable[current_process_info.id - 1] = current_process_info;
   return;
 }
 
