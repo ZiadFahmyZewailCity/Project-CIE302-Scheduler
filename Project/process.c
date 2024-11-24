@@ -36,7 +36,7 @@ int main(int agrc, char *argv[]) {
 
   processInfo.finishTime = x;
   msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
-  raise(getppid(), SIGUSR2);
+  kill(getppid(), SIGUSR2);
   return 0;
 }
 
