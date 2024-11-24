@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
       int remainingTime = 5;
     //Will add arrving messages to prioQUEUE
     Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, 0);
-    if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0)
+    if (Gen_Sched_RCV_VAL != -1)
     {
         int PID = fork();
         if (PID == 0)
@@ -96,16 +96,16 @@ int main(int argc, char *argv[]) {
             execv("process.out", processargs);
                 
         }
-        if (PID == 1)
+        if (PID > 0)
         {
             currentNumberProccess += 1;
             insert_SJF_priQ(pq,RecievedProcess);
             output(RecievedProcess,remainingTime,x);
-            kill(SIGSTP,PID);
+            kill(PID,SIGSTOP);
         }
     } 
     //will only send once the one process before has terminated 
-    if(processTerminateSJF == 1 || currentNumberProccess = 0)
+    if(processTerminateSJF == 1 || currentNumberProccess == 0)
     {
         if (currentNumberProccess > 0)
         {
