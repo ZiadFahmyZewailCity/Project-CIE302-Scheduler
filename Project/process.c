@@ -29,7 +29,7 @@ int main(int agrc, char *argv[]) {
     if (getClk() != x) {
       processInfo.remainingTime--;
       x = getClk();
-      printf("%d\n", processInfo.remainingTime);
+      // printf("%d\n", processInfo.remainingTime);
     }
   }
   destroyClk(false);
@@ -41,7 +41,7 @@ int main(int agrc, char *argv[]) {
 }
 
 void stopProcess(int signum) {
-  printf("stopping!");
+  // printf("stopping!");
   processInfo.pstate = waiting;
   msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
   raise(SIGSTOP);
