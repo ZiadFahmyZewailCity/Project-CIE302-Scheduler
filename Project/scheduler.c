@@ -7,13 +7,17 @@ struct PriorityQueue *pq;
 
 struct processData runningProcess;
 
+struct processStateInfoMsgBuff current_process_info;
+
 int Terminating_Process_MSGQ;
+int Terminating_Process_RCV_VAL;
 
 void clearResources(int signum);
 
 #pragma endregion
 
 #pragma region "SIGCHLD Handler things"
+
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
 
@@ -22,9 +26,11 @@ int processTerminate = 0;
 
 // When processes terminate they will notify the scheduler from here
 void handler_SIGCHILD(int signal);
+
 #pragma endregion
 
 int main(int argc, char *argv[]) {
+#pragma region "initialization"
   signal(SIGINT, clearResources);
   signal(SIGCHLD, handler_SIGCHILD);
   initClk();
@@ -32,6 +38,11 @@ int main(int argc, char *argv[]) {
 
   alg = atoi(argv[1]);
   unsigned int quantum = atoi(argv[2]);
+  unsigned int countProcesses = atoi(argv[3]);
+
+#pragma endregion
+
+  struct processStateInfoMsgBuff ProcessTable[countProcesses];
 
 #pragma region "Initializing message queue"
 #pragma region "Generator to Scheduler Message Queue"
@@ -48,7 +59,6 @@ int main(int argc, char *argv[]) {
 
 #pragma region "Terminiating Process Message Queue"
   key_t Terminating_Process_Key;
-  int Terminating_Process_RCV_VAL;
   Terminating_Process_Key = ftok("Terminating_Processes_KeyFile", 2);
   Terminating_Process_MSGQ = msgget(Terminating_Process_Key, IPC_CREAT | 0666);
   if (Terminating_Process_MSGQ == -1) {
@@ -59,16 +69,16 @@ int main(int argc, char *argv[]) {
 
   struct processMsgBuff RecievedProcess;
   runningProcess.pid = -1;
-  struct processFinalInfo Process_Info;
+  struct processStateInfoMsgBuff Process_Info;
 #pragma endregion
 
   PriorityQueue *pq = initialize_priQ();
-
-
-    
-    p_out = fopen("check.txt", "w");
-    fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
-    fclose(p_out);
+#pragma region "output init"
+  p_out = fopen("check.txt", "w");
+  fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y "
+                 "\twait k\n");
+  fclose(p_out);
+#pragma endregion
 
   // TODO implement the scheduler :)
   switch (alg) {
@@ -87,11 +97,7 @@ int main(int argc, char *argv[]) {
 #pragma region "Recieving Process Data"
       Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
                                  sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
-      // No longer needed
-      /*if (Gen_Sched_RCV_VAL == -1) {*/
-      /*  perror("Error recieving process message");*/
-      /*  exit(-1);*/
-      /*}*/
+
       if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
         if (PID == 0) {
@@ -103,29 +109,67 @@ int main(int argc, char *argv[]) {
           execv("process.out", processargs);
         };
 
-        kill(PID, SIGSTOP);
+        /*kill(PID, SIGSTOP);*/
+        ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
         RecievedProcess.process.pid = PID;
         insert_RR_priQ(pq, RecievedProcess.process);
       }
 #pragma endregion
 
 #pragma region "Round Robin Implementation"
-      //This variable is a place hold for the remaining time parameter that will be recived form process  
-      int remainingTime = 5;
+      // This variable is a place hold for the remaining time parameter that
+      // will be recived form process
       x = getClk();
-      // If time passed is the quantum, or if time is less than quantum, or if
-      // there is no current running process then continue/start the new process
-      // if there is a waiting process in the queue
-      if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
-                               runningProcess.pid == -1)) {
+
+      // If current process is terminating, remove the current process and
+      // switch state
+      if (processTerminate == 1) {
+        // If there's something in queue, then set running process to the
+        // extracted process from the queue
+        if (pq->head != NULL) {
+          runningProcess = extract_highestpri(pq);
+
+          // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
+          // SHOULD BE OUTPUTED
+          output(runningProcess, remainingTime, x);
+
+          kill(runningProcess.pid, SIGCONT);
+        }
+
+        // If there's nothing in queue, then set running pid to -1 so the
+        // scheduler knows there is no current running process
+        else {
+          runningProcess.pid = -1;
+        }
+
+        // set flag back to 0
+        processTerminate = 0;
+      }
+
+      // Instead, if time passed is the quantum, or if time is less than
+      // quantum, or if there is no current running process then continue/start
+      // the new process if there is a waiting process in the queue
+      else if (pq->head != NULL && (x >= (origin + quantum) || x < quantum ||
+                                    runningProcess.pid == -1)) {
         origin = x;
+        // If runningProcess pid is not -1, that means there is a current
+        // running process, so terminate current running process and put back
+        // into queue
         if (runningProcess.pid != -1) {
+          // stop current process
           kill(runningProcess.pid, SIGUSR1);
+          // recieve process info
+          Terminating_Process_RCV_VAL =
+              msgrcv(Terminating_Process_MSGQ, &current_process_info,
+                     sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+          // store process info in process table
+          ProcessTable[runningProcess.id - 1] = current_process_info;
 
+          // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
+          // SHOULD BE OUTPUTED
+          output(runningProcess, current_process_info.remainingTime, x);
 
-          //NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS SHOULD BE OUTPUTED
-          output(runningProcess,remainingTime,x);
-
+          // put process back into queue
           insert_RR_priQ(pq, runningProcess);
           // output the state of current running process
           //
@@ -133,26 +177,13 @@ int main(int argc, char *argv[]) {
         runningProcess = extract_highestpri(pq);
         kill(runningProcess.pid, SIGCONT);
 
-        //Outputs the data when process continues or starts
-        output(runningProcess,remainingTime,x);
-      }
-
-      if (processTerminate == 1) {
-        if (pq->head != NULL) {
-          runningProcess = extract_highestpri(pq);
-
-          //NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS SHOULD BE OUTPUTED
-          output(runningProcess,remainingTime,x);
-
-          kill(runningProcess.pid, SIGCONT);
-        } else {
-          runningProcess.pid = -1;
-        }
-        processTerminate = 0;
+        // Outputs the data when process continues or starts
+        output(runningProcess, current_process_info.remainingTime, x);
       }
 
 #pragma endregion
     }
+
 #pragma endregion
     break;
   }
@@ -160,7 +191,6 @@ int main(int argc, char *argv[]) {
   // upon termination release the clock resources
 
   destroyClk(false);
-
 }
 
 #pragma region "Signal Handler Definitions"
@@ -183,6 +213,9 @@ void clearResources(int signum) {
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
   /*numberChildren -= 1;*/
+  Terminating_Process_RCV_VAL =
+      msgrcv(Terminating_Process_MSGQ, &current_process_info,
+             sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
   return;
 }
 
