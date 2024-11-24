@@ -18,7 +18,7 @@ typedef short bool;
 #define SHKEY 300
 
 #pragma region "Process data structure"
-enum state { started = 1, waiting = 2, running = 3, finished = 4 };
+enum state { running = 1, waiting = 2 };
 
 struct processData {
   unsigned int id;
@@ -52,6 +52,7 @@ struct processMsgBuff {
 struct processStateInfoMsgBuff {
   unsigned int msgType;
   unsigned int id;
+  unsigned int arrivalTime;
   unsigned int startTime;
   unsigned int runTime;
   unsigned int remainingTime;
@@ -260,8 +261,7 @@ struct processData *load(char *inpFileName, int *count_processes) {
 
 FILE *p_out;
 
-void output(struct processData inpProcessData, int remainingTime,
-            int currentTime) {
+void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
   p_out = fopen("check.txt", "a");
   if (p_out == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
@@ -273,7 +273,7 @@ void output(struct processData inpProcessData, int remainingTime,
 
   // This checks if the update is that the process is terminated to print the
   // extra parameters, number should be equal to the enum of terminated status
-  if (inpProcessData.pstate == finished) {
+  if (inpProcessData.remainingTime == 0) {
     int turnAround = currentTime - inpProcessData.arrivalTime;
     int weightedTurnAround =
         (currentTime - inpProcessData.arrivalTime) / inpProcessData.runTime;
@@ -281,33 +281,35 @@ void output(struct processData inpProcessData, int remainingTime,
     fprintf(p_out,
             "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain "
             "%d \twait %d\n \tTA %d \tWTA %d",
-            , currentTime, inpProcessData.id, inpProcessData.arrivalTime,
-            remainingTime, remainingTime, wait_time, turnAround,
-            weightedTurnAround);
+            currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+            inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
+            turnAround, weightedTurnAround);
   } else {
     switch (inpProcessData.pstate) {
-    case started:
-      fprintf(p_out,
-              "At \ttime %d \tprocess %d \tstarted\t arr %d "
-              "\ttotal %d \tremain %d \twait %d\n",
-              currentTime, inpProcessData.id, inpProcessData.arrivalTime,
-              remainingTime, remainingTime, wait_time);
-      break;
 
     case running:
-      fprintf(p_out,
-              "At \ttime %d \tprocess %d \tresumed\t arr %d "
-              "\ttotal %d \tremain %d \twait %d\n",
-              currentTime, inpProcessData.id, inpProcessData.arrivalTime,
-              remainingTime, remainingTime, wait_time);
-
+      if (inpProcessData.runTime == inpProcessData.remainingTime) {
+        fprintf(p_out,
+                "At \ttime %d \tprocess %d \tstarted\t arr %d \ttotal %d "
+                "\tremain %d \twait %d\n",
+                currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+                inpProcessData.runTime, inpProcessData.remainingTime,
+                wait_time);
+      } else {
+        fprintf(p_out,
+                "At \ttime %d \tprocess %d \tresumed\t arr %d \ttotal %d "
+                "\tremain %d \twait %d\n",
+                currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+                inpProcessData.runTime, inpProcessData.remainingTime,
+                wait_time);
+      }
       break;
     case waiting:
       fprintf(p_out,
               "At \ttime %d \tprocess %d \tstopped arr "
               "%d \ttotal %d \tremain %d \twait %d\n",
               currentTime, inpProcessData.id, inpProcessData.arrivalTime,
-              remainingTime, remainingTime, wait_time);
+              inpProcessData.runTime, inpProcessData.remainingTime, wait_time);
       break;
 
     default:
