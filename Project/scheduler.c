@@ -13,6 +13,8 @@ int Terminating_Process_MSGQ;
 int Terminating_Process_RCV_VAL;
 struct processStateInfoMsgBuff *ProcessTable;
 
+int x;
+
 void clearResources(int signum);
 
 #pragma endregion
@@ -35,7 +37,7 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
   signal(SIGCHLD, handler_SIGCHILD);
   initClk();
-  int x = getClk();
+  x = getClk();
 
   alg = atoi(argv[1]);
   unsigned int quantum = atoi(argv[2]);
@@ -112,6 +114,7 @@ int main(int argc, char *argv[]) {
           char *processargs[] = {"./process.out", strrunTime, strid, NULL};
           execv("process.out", processargs);
         };
+        kill(PID, SIGUSR1);
 
         // Initializing some variables for process in the process table
         ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
@@ -146,6 +149,7 @@ int main(int argc, char *argv[]) {
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
           current_process_info = ProcessTable[runningProcess.id - 1];
+          current_process_info.pstate = running;
           output(current_process_info, x);
 
           kill(runningProcess.pid, SIGCONT);

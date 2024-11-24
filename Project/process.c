@@ -17,7 +17,7 @@ int main(int agrc, char *argv[]) {
   termMsgid = msgget(termKey, 0666);
   initClk();
 
-  raise(SIGSTOP);
+  // raise(SIGSTOP);
 
   processInfo.msgType = 1;
   processInfo.startTime = getClk();
