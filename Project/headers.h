@@ -268,8 +268,8 @@ void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
     return;
   }
 
-  int wait_time =
-      (currentTime - inpProcessData.arrivalTime) - inpProcessData.runTime;
+  int wait_time = (currentTime - inpProcessData.arrivalTime) -
+                  inpProcessData.runTime + inpProcessData.remainingTime;
 
   // This checks if the update is that the process is terminated to print the
   // extra parameters, number should be equal to the enum of terminated status

@@ -42,6 +42,7 @@ int main(int agrc, char *argv[]) {
 
 void stopProcess(int signum) {
   printf("stopping!");
+  processInfo.pstate = waiting;
   msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
   raise(SIGSTOP);
 }

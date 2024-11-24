@@ -95,9 +95,11 @@ int main(int argc, char *argv[]) {
     while (1) {
 
 #pragma region "Recieving Process Data"
+      // Check message queue for processes
       Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
                                  sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
 
+      // If process found, generate process then add it to queue
       if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
         if (PID == 0) {
@@ -109,8 +111,15 @@ int main(int argc, char *argv[]) {
           execv("process.out", processargs);
         };
 
-        /*kill(PID, SIGSTOP);*/
+        // Initializing some variables for process in the process table
         ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
+        ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
+            RecievedProcess.process.arrivalTime;
+        ProcessTable[RecievedProcess.process.id - 1].runTime =
+            RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].remainingTime =
+            RecievedProcess.process.runTime;
+        // Adding process to queue
         RecievedProcess.process.pid = PID;
         insert_RR_priQ(pq, RecievedProcess.process);
       }
@@ -131,7 +140,8 @@ int main(int argc, char *argv[]) {
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
-          output(runningProcess, remainingTime, x);
+          current_process_info = ProcessTable[runningProcess.id - 1];
+          output(current_process_info, x);
 
           kill(runningProcess.pid, SIGCONT);
         }
@@ -167,7 +177,7 @@ int main(int argc, char *argv[]) {
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
-          output(runningProcess, current_process_info.remainingTime, x);
+          output(current_process_info, x);
 
           // put process back into queue
           insert_RR_priQ(pq, runningProcess);
@@ -175,10 +185,14 @@ int main(int argc, char *argv[]) {
           //
         }
         runningProcess = extract_highestpri(pq);
+
+        ProcessTable[runningProcess.id - 1].pstate = running;
+
         kill(runningProcess.pid, SIGCONT);
+        current_process_info = ProcessTable[runningProcess.id - 1];
 
         // Outputs the data when process continues or starts
-        output(runningProcess, current_process_info.remainingTime, x);
+        output(current_process_info, x);
       }
 
 #pragma endregion
