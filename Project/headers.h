@@ -318,7 +318,7 @@ void destroyClk(bool terminateAll)
 
 FILE* p_out;
 
-void output(struct processData inpProcessData, int remainingTime,int currentTime)
+void output(struct processStateInfoMsgBuff inpProcessData ,int currentTime)
 {
     p_out = fopen("check.txt", "a");
     if (p_out == NULL)
@@ -332,31 +332,33 @@ void output(struct processData inpProcessData, int remainingTime,int currentTime
 
     //This checks if the update is that the process is terminated to print the extra parameters, 
     //number should be equal to the enum of terminated status
-    if(inpProcessData.pstate == finished)
+    if(inpProcessData.remainingTime == 0)
     {
         int turnAround = currentTime - inpProcessData.arrivalTime;
         int weightedTurnAround = (currentTime - inpProcessData.arrivalTime)/ inpProcessData.runTime;
 
         fprintf(p_out, "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain %d \twait %d\n \tTA %d \tWTA %d",
-        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time, turnAround, weightedTurnAround);
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, inpProcessData.runTime, inpProcessData.remainingTime, wait_time, turnAround, weightedTurnAround);
     }
     else
     {
         switch (inpProcessData.pstate)
-        {
-        case (started)
-            fprintf(p_out, "At \ttime %d \tprocess %d \tstarted\t arr %d \ttotal %d \tremain %d \twait %d\n" 
-        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
-        break;
-        
+        {   
         case (running)
+          if (inpProcessData.runTime == inpProcessData.remainTime)
+          {
+            fprintf(p_out, "At \ttime %d \tprocess %d \tstarted\t arr %d \ttotal %d \tremain %d \twait %d\n" 
+            ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, inpProcessData.runTime, inpProcessData.remainingTime, wait_time,);
+          }
+          else
+          {
             fprintf(p_out, "At \ttime %d \tprocess %d \tresumed\t arr %d \ttotal %d \tremain %d \twait %d\n" 
-        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
-        
+            ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, inpProcessData.runTime, inpProcessData.remainingTime, wait_time,);
+          }
         break;
         case (waiting)
             fprintf(p_out, "At \ttime %d \tprocess %d \tstopped arr %d \ttotal %d \tremain %d \twait %d\n" 
-        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, remainingTime, remainingTime, wait_time,);
+        ,currentTime, inpProcessData.id, inpProcessData.arrivalTime, inpProcessData.runTime, inpProcessData.remainingTime, wait_time,);
         break;
         
         default:
