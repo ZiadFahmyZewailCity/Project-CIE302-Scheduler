@@ -107,13 +107,24 @@ int main(int argc, char *argv[]) {
     //will only send once the one process before has terminated 
     if(processTerminateSJF == 1 || currentNumberProccess == 0)
     {
-        if (currentNumberProccess > 0)
-        {
+          struct processData highestprio = extract_highestpri(pq);
+          if (highestprio.pid == -1)
+          {
+            kill(highestprio.pid,SIGCONT);
+            output(highestprio,remainingTime,x);
+          }
+          else
+          {
             currentNumberProccess -= 1;
             processTerminateSJF = 0;
-            processData highestprio = extract_highestpri(pq);
-            kill(highestprio.pid,SIGCONT,);
+            kill(highestprio.pid,SIGCONT);
+
+            msgrcv(Terminating_Process_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT)
             output(highestprio,remainingTime,x);
+            output(RecievedProcess,remainingTime,x);
+          }
+          
+
         }
      }  
 }
