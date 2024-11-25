@@ -276,7 +276,7 @@ void output(struct processStateInfo inpProcessData, int currentTime,
 
     fprintf(p_out,
             "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain "
-            "%d \twait %d\n \tTA %d \tWTA %d",
+            "%d \twait %d\n \tTA %d \tWTA %d\n",
             currentTime, inpProcessData.id, inpProcessData.arrivalTime,
             inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
             turnAround, weightedTurnAround);

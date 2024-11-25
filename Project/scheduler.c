@@ -29,6 +29,9 @@ int terminatedProcessId = -2;
 
 int numberFinishedProcesses = 0;
 
+// round robin origin
+int origin = 0;
+
 // Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
 
@@ -100,13 +103,13 @@ int main(int argc, char *argv[]) {
   case RR:
 #pragma region "Round Robin"
 
-    int origin = 0;
     while (numberFinishedProcesses < countProcesses) {
 
 #pragma region "Recieving Process Data"
       // Check message queue for processes
-      Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
-                                 sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
+      Gen_Sched_RCV_VAL =
+          msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
+                 sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
 
       // If process found, generate process then add it to queue
       if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
@@ -185,7 +188,8 @@ int main(int argc, char *argv[]) {
           // recieve process info
           Terminating_Process_RCV_VAL =
               msgrcv(Terminating_Process_MSGQ, &current_process_msg,
-                     sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+                     sizeof(struct processStateInfoMsgBuff) - sizeof(long), 0,
+                     !IPC_NOWAIT);
           // store process info in process table
           ProcessTable[runningProcess.id - 1] =
               current_process_msg.processState;
@@ -218,9 +222,8 @@ int main(int argc, char *argv[]) {
   // upon termination release the clock resources
 
   destroyClk(0);
-  msgctl(Terminating_Process_MSGQ, IPC_RMID, NULL);
 
-  exit(0);
+  raise(SIGINT);
 }
 
 #pragma region "Signal Handler Definitions"
@@ -243,11 +246,13 @@ void handler_SIGCHILD(int signal) {
   processTerminate = 1;
   /*numberChildren -= 1;*/
   numberFinishedProcesses++;
+  origin = x;
+
   struct processStateInfoMsgBuff finishedProcessState;
 
-  Terminating_Process_RCV_VAL =
-      msgrcv(Terminating_Process_MSGQ, &finishedProcessState,
-             sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
+  Terminating_Process_RCV_VAL = msgrcv(
+      Terminating_Process_MSGQ, &finishedProcessState,
+      sizeof(struct processStateInfoMsgBuff) - sizeof(long), 0, !IPC_NOWAIT);
   if (Terminating_Process_RCV_VAL == -1) {
     perror("Couldn't recieve final process state. ");
   };

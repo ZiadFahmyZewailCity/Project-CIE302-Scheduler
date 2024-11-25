@@ -103,8 +103,8 @@ int main(int argc, char *argv[]) {
     x = getClk();
     if (x >= processDataList[i].arrivalTime) {
       message.process = processDataList[i];
-      Gen_Sched_SND_VAL =
-          msgsnd(Gen_Sched_MSGQ, &message, sizeof(message), !IPC_NOWAIT);
+      Gen_Sched_SND_VAL = msgsnd(Gen_Sched_MSGQ, &message,
+                                 sizeof(message) - sizeof(long), !IPC_NOWAIT);
       i++;
     }
   }
