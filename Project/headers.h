@@ -1,15 +1,15 @@
-#include <stdio.h>      //if you don't use scanf/printf change this include
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <signal.h>
+#include <stdio.h> //if you don't use scanf/printf change this include
+#include <stdlib.h>
 #include <sys/file.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
 #include <sys/msg.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 
 typedef short bool;
 #define true 1
@@ -17,44 +17,56 @@ typedef short bool;
 
 #define SHKEY 300
 
-
 #pragma region "Process data structure"
+enum state { running = 1, waiting = 2 };
+
 struct processData {
-  unsigned int id;
+  int id;
   unsigned int arrivalTime;
   unsigned int runTime;
   unsigned int priority;
-  unsigned int pid;
-  enum state pstate;
+  int pid;
+  // enum state pstate;
 };
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
-enum state { running = 1, waiting = 2, started = 3, finished = 4 };
-
 struct PCB {
   enum state pstate;
-  unsigned int executionTime;
+  unsigned int startTime;
   unsigned int remainingTime;
-  unsigned int waitingTime;
+  unsigned int finishTime;
+  // unsigned int waitingTime;
 };
 
-struct processFinalInfo {
-  uint id;
-  uint msgType;
-  uint startTime;
-  uint runTime;
-  uint remainingTime;
-  uint finishTime;
+#pragma endregion
+
+#pragma region "Inter Process Communication"
+// Structure for Process message buffer, if any additions are need beyond the
+// process data
+struct processMsgBuff {
+  long mtype;
+  struct processData process;
 };
 
+struct processStateInfoMsgBuff {
+  long  mtype;
+  unsigned int id;
+  unsigned int arrivalTime;
+  unsigned int startTime;
+  unsigned int runTime;
+  unsigned int remainingTime;
+  unsigned int finishTime;
+  enum state pstate;
+};
 #pragma endregion
 
 #pragma region "Round Robin Algorithm"
 
 #pragma endregion
 
-#pragma region PriorityQueue
+#pragma region "Priority Queue"
+
 // Defining priority queue node implementation as a linked list
 typedef struct Node {
   struct processData process;
@@ -134,6 +146,22 @@ void insert_PHPF_priQ(PriorityQueue *pq, struct processData process) {
   }
 }
 
+void insert_SJF_priQ(PriorityQueue *pq, struct processData process) {
+  Node *new_node = create_Node(process);
+  if (pq->head == NULL || pq->head->process.runTime > process.runTime) {
+    new_node->next = pq->head;
+    pq->head = new_node;
+  } else {
+    Node *current = pq->head;
+    while (current->next != NULL &&
+           current->next->process.runTime <= process.runTime) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+}
+
 void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
   Node *new_node = create_Node(process);
   if (pq->head == NULL) {
@@ -148,6 +176,7 @@ void insert_RR_priQ(PriorityQueue *pq, struct processData process) {
     current->next = new_node;
   }
 }
+
 
 
 void insert_SJF_priQ(PriorityQueue *pq, struct processData process) {
@@ -196,6 +225,7 @@ void handle_PHPF_process(PriorityQueue *pq, struct processData process) {
   }
 }
 #pragma endregion
+
 // Process Data Loader
 struct processData *load(char *inpFileName, int *count_processes) {
   *count_processes = 0;
@@ -254,53 +284,100 @@ struct processData *load(char *inpFileName, int *count_processes) {
   return p_arr_process;
 }
 
+#pragma region outputFunction
 
-#pragma region "Inter Process Communication"
-// Structure for Process message buffer, if any additions are need beyond the
-// process data
-struct processMsgBuff {
-  // long mtype;
-  struct processData process;
-};
+FILE *p_out;
+
+void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
+  p_out = fopen("check.txt", "a");
+  if (p_out == NULL) {
+    perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+    return;
+  }
+
+  int wait_time = (currentTime - inpProcessData.arrivalTime) -
+                  inpProcessData.runTime + inpProcessData.remainingTime;
+
+  // This checks if the update is that the process is terminated to print the
+  // extra parameters, number should be equal to the enum of terminated status
+  if (inpProcessData.remainingTime == 0) {
+    int turnAround = currentTime - inpProcessData.arrivalTime;
+    int weightedTurnAround =
+        (currentTime - inpProcessData.arrivalTime) / inpProcessData.runTime;
+
+    fprintf(p_out,
+            "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain "
+            "%d \twait %d\n \tTA %d \tWTA %d",
+            currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+            inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
+            turnAround, weightedTurnAround);
+  } else {
+    switch (inpProcessData.pstate) {
+
+    case running:
+      if (inpProcessData.runTime == inpProcessData.remainingTime) {
+        fprintf(p_out,
+                "At \ttime %d \tprocess %d \tstarted\t arr %d \ttotal %d "
+                "\tremain %d \twait %d\n",
+                currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+                inpProcessData.runTime, inpProcessData.remainingTime,
+                wait_time);
+      } else {
+        fprintf(p_out,
+                "At \ttime %d \tprocess %d \tresumed\t arr %d \ttotal %d "
+                "\tremain %d \twait %d\n",
+                currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+                inpProcessData.runTime, inpProcessData.remainingTime,
+                wait_time);
+      }
+      break;
+    case waiting:
+      fprintf(p_out,
+              "At \ttime %d \tprocess %d \tstopped arr "
+              "%d \ttotal %d \tremain %d \twait %d\n",
+              currentTime, inpProcessData.id, inpProcessData.arrivalTime,
+              inpProcessData.runTime, inpProcessData.remainingTime, wait_time);
+      break;
+
+    default:
+      break;
+    }
+
+    fclose(p_out);
+  }
+}
 
 #pragma endregion
 
 #pragma region "Clock Stuff"
 ///==============================
-//don't mess with this variable//
-int * shmaddr;                 //
+// don't mess with this variable//
+int *shmaddr; //
 //===============================
 
-
-
-int getClk()
-{
-    return *shmaddr;
-}
-
+int getClk() { return *shmaddr; }
 
 /*
- * All process call this function at the beginning to establish communication between them and the clock module.
- * Again, remember that the clock is only emulation!
-*/
-void initClk()
-{
-    int shmid = shmget(SHKEY, 4, 0444);
-    while ((int)shmid == -1)
-    {
-        //Make sure that the clock exists
-        printf("Wait! The clock not initialized yet!\n");
-        sleep(1);
-        shmid = shmget(SHKEY, 4, 0444);
-    }
-    shmaddr = (int *) shmat(shmid, (void *)0, 0);
+ * All process call this function at the beginning to establish communication
+ * between them and the clock module. Again, remember that the clock is only
+ * emulation!
+ */
+void initClk() {
+  int shmid = shmget(SHKEY, 4, 0444);
+  while ((int)shmid == -1) {
+    // Make sure that the clock exists
+    printf("Wait! The clock not initialized yet!\n");
+    sleep(1);
+    shmid = shmget(SHKEY, 4, 0444);
+  }
+  shmaddr = (int *)shmat(shmid, (void *)0, 0);
 }
-
 
 /*
  * All process call this function at the end to release the communication
  * resources between them and the clock module.
  * Again, Remember that the clock is only emulation!
+
  * Input: terminateAll: a flag to indicate whether that this is the end of simulation.
  *                      It terminates the whole system and releases resources.
 */
@@ -378,3 +455,4 @@ void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
 }
 
 #pragma endregion
+
