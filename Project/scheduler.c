@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
         {
             currentNumberProccess += 1;
             insert_SJF_priQ(pq,RecievedProcess);
-            output(RecievedProcess,remainingTime,x);
+            output(RecievedProcess, x);
             kill(PID,SIGSTOP);
         }
     } 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
           if (highestprio.pid == -1)
           {
             kill(highestprio.pid,SIGCONT);
-            output(highestprio,remainingTime,x);
+            output(highestprio, x);
           }
           else
           {
@@ -120,8 +120,9 @@ int main(int argc, char *argv[]) {
             kill(highestprio.pid,SIGCONT);
 
             msgrcv(Terminating_Process_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT)
-            output(highestprio,remainingTime,x);
-            output(RecievedProcess,remainingTime,x);
+            output(highestprio, x);
+            output(RecievedProcess, x);
+ 
           }
           
 
