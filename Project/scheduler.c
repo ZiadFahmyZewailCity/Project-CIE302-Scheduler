@@ -67,16 +67,16 @@ int main(int argc, char *argv[]) {
 
     
     p_out = fopen("check.txt", "w");
-    fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");
+    fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y \twait k\n");q
     fclose(p_out);
 
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
-
+{
   int currentNumberProccess = 0;
     while(1)
-{
+    {
     x = getClk();
     //This variable is a place hold for the remaining time parameter that will be recived form process  
       int remainingTime = 5;
@@ -126,8 +126,9 @@ int main(int argc, char *argv[]) {
           
 
         }
-     }  
+     }
 }
+
 
     break;
   case PHPF:
