@@ -7,11 +7,13 @@ struct PriorityQueue *pq;
 
 struct processData runningProcess;
 
-struct processStateInfoMsgBuff current_process_info;
+struct processStateInfo current_process_info;
+struct processStateInfoMsgBuff current_process_msg;
 
 int Terminating_Process_MSGQ;
 int Terminating_Process_RCV_VAL;
-struct processStateInfoMsgBuff *ProcessTable;
+
+struct processStateInfo *ProcessTable;
 
 int x;
 
@@ -23,6 +25,9 @@ void clearResources(int signum);
 
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
+int terminatedProcessId = -2;
+
+int numberFinishedProcesses = 0;
 
 // Number of children <<PROBABLY UNNECESSARY>>
 /*int numberChildren = 0;*/
@@ -45,8 +50,8 @@ int main(int argc, char *argv[]) {
 
 #pragma endregion
 
-  ProcessTable = (struct processStateInfoMsgBuff *)malloc(
-      countProcesses * sizeof(struct processStateInfoMsgBuff));
+  ProcessTable = (struct processStateInfo *)malloc(
+      countProcesses * sizeof(struct processStateInfo));
 
 #pragma region "Initializing message queue"
 #pragma region "Generator to Scheduler Message Queue"
@@ -96,7 +101,7 @@ int main(int argc, char *argv[]) {
 #pragma region "Round Robin"
 
     int origin = 0;
-    while (1) {
+    while (numberFinishedProcesses < countProcesses) {
 
 #pragma region "Recieving Process Data"
       // Check message queue for processes
@@ -109,15 +114,16 @@ int main(int argc, char *argv[]) {
         if (PID == 0) {
           char strrunTime[6];
           char strid[6];
+          char strarrivalTime[6];
           sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
           sprintf(strid, "%d", RecievedProcess.process.id);
-          char *processargs[] = {"./process.out", strrunTime, strid, NULL};
+          sprintf(strarrivalTimee, "%d", RecievedProcess.process.arrivalTime);
+          char *processargs[] = {"./process.out", strrunTime, strid,
+                                 strarrivalTime, NULL};
           execv("process.out", processargs);
         };
-        /*kill(PID, SIGSTOP);*/
 
         // Initializing some variables for process in the process table
-        ProcessTable[RecievedProcess.process.id - 1].pstate = waiting;
         ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
             RecievedProcess.process.arrivalTime;
         ProcessTable[RecievedProcess.process.id - 1].runTime =
@@ -139,7 +145,7 @@ int main(int argc, char *argv[]) {
 
       // If current process is terminating, remove the current process and
       // switch state
-      if (processTerminate == 1) {
+      if (processTerminate == 1 && terminatedProcessId == runningProcess.id) {
         /*ProcessTable[current_process_info.id - 1] = current_process_info;*/
         // If there's something in queue, then set running process to the
         // extracted process from the queue
@@ -149,8 +155,7 @@ int main(int argc, char *argv[]) {
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
           current_process_info = ProcessTable[runningProcess.id - 1];
-          current_process_info.pstate = running;
-          output(current_process_info, x);
+          output(current_process_info, x, running);
 
           kill(runningProcess.pid, SIGCONT);
         }
@@ -179,14 +184,15 @@ int main(int argc, char *argv[]) {
           kill(runningProcess.pid, SIGUSR1);
           // recieve process info
           Terminating_Process_RCV_VAL =
-              msgrcv(Terminating_Process_MSGQ, &current_process_info,
+              msgrcv(Terminating_Process_MSGQ, &current_process_msg,
                      sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
           // store process info in process table
-          ProcessTable[runningProcess.id - 1] = current_process_info;
+          ProcessTable[runningProcess.id - 1] =
+              current_process_msg.processState;
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
-          output(current_process_info, x);
+          output(current_process_msg.processState, x, waiting);
 
           // put process back into queue
           insert_RR_priQ(pq, runningProcess);
@@ -195,13 +201,11 @@ int main(int argc, char *argv[]) {
         }
         runningProcess = extract_highestpri(pq);
 
-        ProcessTable[runningProcess.id - 1].pstate = running;
-
         kill(runningProcess.pid, SIGCONT);
         current_process_info = ProcessTable[runningProcess.id - 1];
 
         // Outputs the data when process continues or starts
-        output(current_process_info, x);
+        output(current_process_info, x, running);
       }
 
 #pragma endregion
@@ -213,7 +217,10 @@ int main(int argc, char *argv[]) {
 
   // upon termination release the clock resources
 
-  destroyClk(false);
+  destroyClk(0);
+  msgctl(Terminating_Process_MSGQ, IPC_RMID, NULL);
+
+  exit(0);
 }
 
 #pragma region "Signal Handler Definitions"
@@ -221,8 +228,7 @@ int main(int argc, char *argv[]) {
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
   printf("Clearing scheduler resources...\n");
-  struct msqid_ds temp;
-  msgctl(Terminating_Process_MSGQ, IPC_RMID, &temp);
+  msgctl(Terminating_Process_MSGQ, IPC_RMID, NULL);
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
   while (runningProcess.pid != -1) {
@@ -236,11 +242,20 @@ void clearResources(int signum) {
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
   /*numberChildren -= 1;*/
+  numberFinishedProcesses++;
+  struct processStateInfoMsgBuff finishedProcessState;
+
   Terminating_Process_RCV_VAL =
-      msgrcv(Terminating_Process_MSGQ, &current_process_info,
+      msgrcv(Terminating_Process_MSGQ, &finishedProcessState,
              sizeof(struct processStateInfoMsgBuff), 0, !IPC_NOWAIT);
-  output(current_process_info, x);
-  ProcessTable[current_process_info.id - 1] = current_process_info;
+  if (Terminating_Process_RCV_VAL == -1) {
+    perror("Couldn't recieve final process state. ");
+  };
+  terminatedProcessId = finishedProcessState.processState.id;
+
+  output(finishedProcessState.processState, x, waiting);
+  ProcessTable[finishedProcessState.processState.id - 1] =
+      finishedProcessState.processState;
   return;
 }
 

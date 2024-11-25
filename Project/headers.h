@@ -31,12 +31,13 @@ struct processData {
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
-struct PCB {
-  enum state pstate;
+struct processStateInfo {
+  unsigned int id;
+  unsigned int arrivalTime;
   unsigned int startTime;
+  unsigned int runTime;
   unsigned int remainingTime;
   unsigned int finishTime;
-  // unsigned int waitingTime;
 };
 
 #pragma endregion
@@ -50,14 +51,8 @@ struct processMsgBuff {
 };
 
 struct processStateInfoMsgBuff {
-  unsigned int msgType;
-  unsigned int id;
-  unsigned int arrivalTime;
-  unsigned int startTime;
-  unsigned int runTime;
-  unsigned int remainingTime;
-  unsigned int finishTime;
-  enum state pstate;
+  long mtype;
+  struct processStateInfo processState;
 };
 #pragma endregion
 
@@ -261,7 +256,8 @@ struct processData *load(char *inpFileName, int *count_processes) {
 
 FILE *p_out;
 
-void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
+void output(struct processStateInfo inpProcessData, int currentTime,
+            state pstate) {
   p_out = fopen("check.txt", "a");
   if (p_out == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
@@ -285,7 +281,7 @@ void output(struct processStateInfoMsgBuff inpProcessData, int currentTime) {
             inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
             turnAround, weightedTurnAround);
   } else {
-    switch (inpProcessData.pstate) {
+    switch (pstate) {
 
     case running:
       if (inpProcessData.runTime == inpProcessData.remainingTime) {

@@ -2,6 +2,7 @@
 
 #define RUN_TIME atoi(argv[1])
 #define PROCESS_ID atoi(argv[2])
+#define ARRIVAL_TIME atoi(argv[3])
 
 /* Modify this file as needed*/
 /*int remainingTime;*/
@@ -9,7 +10,8 @@ int termMsgid;
 
 void stopProcess(int signum);
 
-struct processStateInfoMsgBuff processInfo;
+struct processStateInfo processInfo;
+struct processStateInfoMsgBuff processMessage;
 
 int main(int agrc, char *argv[]) {
   raise(SIGSTOP);
@@ -18,7 +20,8 @@ int main(int agrc, char *argv[]) {
   termMsgid = msgget(termKey, 0666);
   initClk();
 
-  processInfo.msgType = 1;
+  processMessage.mtype = 1;
+
   processInfo.startTime = getClk();
   processInfo.runTime = RUN_TIME;
   processInfo.id = PROCESS_ID;
@@ -32,17 +35,21 @@ int main(int agrc, char *argv[]) {
       // printf("%d\n", processInfo.remainingTime);
     }
   }
-  destroyClk(false);
+  destroyClk(0);
 
   processInfo.finishTime = x;
-  msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
+  processMessage.processState = processInfo;
+
+  msgsnd(termMsgid, &processMessage, sizeof(struct processStateInfoMsgBuff),
+         !IPC_NOWAIT);
   kill(getppid(), SIGUSR2);
   return 0;
 }
 
 void stopProcess(int signum) {
   // printf("stopping!");
-  processInfo.pstate = waiting;
-  msgsnd(termMsgid, &processInfo, sizeof(struct processStateInfoMsgBuff), 0);
+  processMessage.processState = processInfo;
+  msgsnd(termMsgid, &processMessage, sizeof(struct processStateInfoMsgBuff),
+         !IPC_NOWAIT);
   raise(SIGSTOP);
 }

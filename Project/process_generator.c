@@ -99,21 +99,24 @@ int main(int argc, char *argv[]) {
   message.mtype = 1;
 
   // 6. Send the information to the scheduler at the appropriate time.
-  while (1) {
+  while (i < count_processes) {
     x = getClk();
-    if (i < count_processes && x >= processDataList[i].arrivalTime) {
+    if (x >= processDataList[i].arrivalTime) {
       message.process = processDataList[i];
       Gen_Sched_SND_VAL =
           msgsnd(Gen_Sched_MSGQ, &message, sizeof(message), !IPC_NOWAIT);
       i++;
     }
   }
-
-  // 7. Clear clock resources
-  destroyClk(1);
-  struct msqid_ds temp;
-  msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);
-  kill(SchedulerPID, SIGINT);
+  int status;
+  wait(&status);
+  if (WIFEXISTED(status)) {
+    // 7. Clear clock resources
+    destroyClk(1);
+    struct msqid_ds temp;
+    msgctl(Gen_Sched_MSGQ, IPC_RMID, &temp);
+    kill(SchedulerPID, SIGINT);
+  }
 }
 
 void clearResources(int signum) {
@@ -124,6 +127,7 @@ void clearResources(int signum) {
   kill(SchedulerPID, SIGINT);
   destroyClk(true);
   // Incomplete
+  // kill signal doesn't work for some reason
 
   exit(0);
 }
