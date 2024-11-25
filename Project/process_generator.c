@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   }
   int status;
   wait(&status);
-  if (WIFEXISTED(status)) {
+  if (WIFEXITED(status)) {
     // 7. Clear clock resources
     destroyClk(1);
     struct msqid_ds temp;
