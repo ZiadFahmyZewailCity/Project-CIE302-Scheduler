@@ -257,7 +257,7 @@ struct processData *load(char *inpFileName, int *count_processes) {
 FILE *p_out;
 
 void output(struct processStateInfo inpProcessData, int currentTime,
-            state pstate) {
+            enum state pstate) {
   p_out = fopen("check.txt", "a");
   if (p_out == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
