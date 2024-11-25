@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
           char strarrivalTime[6];
           sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
           sprintf(strid, "%d", RecievedProcess.process.id);
-          sprintf(strarrivalTimee, "%d", RecievedProcess.process.arrivalTime);
+          sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
           char *processargs[] = {"./process.out", strrunTime, strid,
                                  strarrivalTime, NULL};
           execv("process.out", processargs);
