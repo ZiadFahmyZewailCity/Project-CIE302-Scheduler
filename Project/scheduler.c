@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
                                  strarrivalTime, NULL};
           execv("process.out", processargs);
         };
+        kill(PID, SIGSTOP);
 
         // Initializing some variables for process in the process table
         ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
