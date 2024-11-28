@@ -36,7 +36,6 @@ struct processStateInfo {
   unsigned int arrivalTime;
   unsigned int startTime;
   unsigned int runTime;
-
   unsigned int remainingTime;
   unsigned int finishTime;
 };
@@ -356,5 +355,4 @@ void destroyClk(bool terminateAll) {
   if (terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
-
 }
