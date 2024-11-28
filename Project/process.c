@@ -33,7 +33,7 @@ int main(int agrc, char *argv[]) {
     if (getClk() != x) {
       processInfo.remainingTime--;
       x = getClk();
-      // printf("%d\n", processInfo.remainingTime);
+      printf("%d\t %d\n",processInfo.id ,processInfo.remainingTime);
     }
   }
   destroyClk(0);

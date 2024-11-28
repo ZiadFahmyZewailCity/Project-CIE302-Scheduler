@@ -29,7 +29,7 @@ struct processData {
   // enum state pstate;
 };
 
-enum schedulingAlgorithm { SJF = 1, PHPF, RR };
+enum schedulingAlgorithm { SJF = 1, PHPF = 2, RR = 3};
 
 struct processStateInfo {
   unsigned int id;
@@ -280,6 +280,7 @@ void output(struct processStateInfo inpProcessData, int currentTime,
             currentTime, inpProcessData.id, inpProcessData.arrivalTime,
             inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
             turnAround, weightedTurnAround);
+            fclose(p_out);
   } else {
     switch (pstate) {
 

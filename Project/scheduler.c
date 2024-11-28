@@ -92,11 +92,16 @@ int main(int argc, char *argv[]) {
   fclose(p_out);
 #pragma endregion
 
+//printf("I have reached before the switchcase");
+
+
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
 {
   int currentNumberProccess = 0;
+  printf("I am creating a proccess");
+
   while (numberFinishedProcesses < countProcesses) {
   {
   x = getClk();
@@ -113,6 +118,7 @@ int main(int argc, char *argv[]) {
         sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
         char *processargs[] = {"./process.out", strrunTime, strid,
                                 strarrivalTime, NULL};
+
         execv("process.out", processargs);
       }
       else
@@ -132,7 +138,7 @@ int main(int argc, char *argv[]) {
       currentNumberProccess += 1;
         
       // Adding process to queue
-      insert_SJF_priQ(pq,RecievedProcess);
+      insert_SJF_priQ(pq,RecievedProcess.process);
         
       //Stopping proccess that has just been forked  
       kill(PID,SIGSTOP);
@@ -142,14 +148,17 @@ int main(int argc, char *argv[]) {
     if(processTerminate == 1 || currentNumberProccess == 0)
     {
       struct processData highestprio = extract_highestpri(pq);
-      if (highestprio =! -1)
+      if (highestprio.pid =! -1)
       {
         currentNumberProccess -= 1;
 
         processTerminate = 0;
         
         kill(highestprio.pid,SIGCONT);
-        output(highestprio, x, running);
+
+        struct processStateInfo  proccesRunning = ProcessTable[highestprio.id - 1];
+      
+        output(proccesRunning, x, running);
       }
       else
       {
@@ -185,7 +194,7 @@ int main(int argc, char *argv[]) {
                     currentNumberProccess += 1;
                       
                     // Adding process to queue
-                    insert_SJF_priQ(pq,RecievedProcess);
+                    insert_SJF_priQ(pq,RecievedProcess.process);
                       
                     //Stopping proccess that has just been forked  
                     kill(PID,SIGSTOP);
@@ -438,6 +447,7 @@ int main(int argc, char *argv[]) {
 #pragma endregion
     break;
   }
+  }
 
   // upon termination release the clock resources
 
@@ -484,4 +494,3 @@ void handler_SIGCHILD(int signal) {
   return;
 }
 
-#pragma endregion
