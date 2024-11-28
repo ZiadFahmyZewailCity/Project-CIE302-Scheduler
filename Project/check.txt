@@ -1,0 +1,7 @@
+# At 	time x 	process y 	state arr w 	total z 	remain y 	wait k
+At 	time 2 	process 1 	stopped arr 2 	total 25 	remain 25 	wait 0
+At 	time 2 	process 1 	started	 arr 2 	total 25 	remain 25 	wait 0
+At 	time 4 	process 2 	stopped arr 4 	total 11 	remain 11 	wait 0
+At 	time 11 	process 3 	stopped arr 11 	total 15 	remain 15 	wait 0
+At 	time 11 	process 1 	stopped arr 2 	total 25 	remain 25 	wait 9
+At 	time 11 	process 3 	started	 arr 11 	total 15 	remain 15 	wait 0
