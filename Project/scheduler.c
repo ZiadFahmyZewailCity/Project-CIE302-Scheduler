@@ -95,6 +95,62 @@ int main(int argc, char *argv[]) {
   // TODO implement the scheduler :)
   switch (alg) {
   case SJF:
+{
+  int currentNumberProccess = 0;
+    while(1)
+    {
+    x = getClk();
+    //This variable is a place hold for the remaining time parameter that will be recived form process  
+      int remainingTime = 5;
+    //Will add arrving messages to prioQUEUE
+    Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
+    if (Gen_Sched_RCV_VAL != -1)
+    {
+        int PID = fork();
+        if (PID == 0)
+        {
+            
+            char strrunTime[6];
+            char strid[6];
+            sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
+            sprintf(strid, "%d", RecievedProcess.process.id);
+            char *processargs[] = {"./process.out", strrunTime, strid, NULL};
+            execv("process.out", processargs);
+                
+        }
+        if (PID > 0)
+        {
+            currentNumberProccess += 1;
+            insert_SJF_priQ(pq,RecievedProcess);
+            output(RecievedProcess, x);
+            kill(PID,SIGSTOP);
+        }
+    } 
+    //will only send once the one process before has terminated 
+    if(processTerminateSJF == 1 || currentNumberProccess == 0)
+    {
+          struct processData highestprio = extract_highestpri(pq);
+          if (highestprio.pid == -1)
+          {
+            kill(highestprio.pid,SIGCONT);
+            output(highestprio, x);
+          }
+          else
+          {
+            currentNumberProccess -= 1;
+            processTerminateSJF = 0;
+            kill(highestprio.pid,SIGCONT);
+
+            msgrcv(Terminating_Process_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT)
+            output(highestprio, x);
+            output(RecievedProcess, x);
+ 
+          }
+          
+
+        }
+     }
+}
 
     break;
   case PHPF:
