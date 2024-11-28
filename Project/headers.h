@@ -31,11 +31,19 @@ struct processData {
 
 enum schedulingAlgorithm { SJF = 1, PHPF, RR };
 
+<<<<<<< HEAD
 struct processStateInfo {
   unsigned int id;
   unsigned int arrivalTime;
   unsigned int startTime;
   unsigned int runTime;
+=======
+enum state { running = 1, waiting = 2};
+
+struct PCB {
+  enum state pstate;
+  unsigned int executionTime;
+>>>>>>> origin
   unsigned int remainingTime;
   unsigned int finishTime;
 };
@@ -51,8 +59,28 @@ struct processMsgBuff {
 };
 
 struct processStateInfoMsgBuff {
+<<<<<<< HEAD
   long mtype;
   struct processStateInfo processState;
+=======
+  unsigned int msgType;
+  unsigned int id;
+  unsigned int startTime;
+  unsigned int runTime;
+  unsigned int remainingTime;
+  unsigned int finishTime;
+  enum state pstate;
+};
+
+
+struct processFinalInfo {
+  unsigned int msgType;
+  unsigned int id;
+  unsigned int startTime;
+  unsigned int runTime;
+  unsigned int remainingTime;
+  unsigned int finishTime;
+>>>>>>> origin
 };
 #pragma endregion
 
@@ -356,3 +384,5 @@ void destroyClk(bool terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
 }
+#pragma endregion
+
