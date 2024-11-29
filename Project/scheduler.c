@@ -25,6 +25,7 @@ void clearResources(int signum);
 
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
+int proccessRunningSJF = 0;
 int terminatedProcessId = -2;
 
 int numberFinishedProcesses = 0;
@@ -86,20 +87,229 @@ int main(int argc, char *argv[]) {
 
   PriorityQueue *pq = initialize_priQ();
 #pragma region "output init"
-  p_out = fopen("check.txt", "w");
+  p_out = fopen("Scheduler.log", "w");
   fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y "
                  "\twait k\n");
   fclose(p_out);
 #pragma endregion
 
+//printf("I have reached before the switchcase");
+
+
   // TODO implement the scheduler :)
+  printf("algo = %d\n", alg);
   switch (alg) {
   case SJF:
+  {
+    int currentNumberProccess = 0;
+    while (numberFinishedProcesses < countProcesses) {
+      
+      x = getClk();
+      Gen_Sched_RCV_VAL =
+          msgrcv(Gen_Sched_MSGQ, &RecievedProcess, sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
+      if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
+        int PID = fork();
+        printf("Child Fork! %d\n", PID);
 
+        if (PID == 0) {
+          char strrunTime[6];
+          char strid[6];
+          char strarrivalTime[6];
+          sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
+          sprintf(strid, "%d", RecievedProcess.process.id);
+          sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
+          char *processargs[] = {"./process.out", strrunTime, strid,
+                                  strarrivalTime, NULL};
+          execv("process.out", processargs);
+          perror("Execv failed!\n");
+        }
+        // Parent process (scheduler)
+        RecievedProcess.process.pid = PID;
+      
+
+        // Initializing some variables for process in the process table
+        ProcessTable[RecievedProcess.process.id - 1].arrivalTime = RecievedProcess.process.arrivalTime;
+        ProcessTable[RecievedProcess.process.id - 1].runTime = RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].remainingTime = RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].id = RecievedProcess.process.id;
+        
+        RecievedProcess.process.pid = PID;
+          
+        currentNumberProccess += 1;
+        printf("Current number proccess section 1 = %d\n",currentNumberProccess);
+          
+        // Adding process to queue
+        insert_SJF_priQ(pq,RecievedProcess.process);
+          
+        //Stopping proccess that has just been forked  
+        kill(PID,SIGSTOP);
+      } 
+
+      if(proccessRunningSJF == 0)
+      {
+        struct processData highestprio = extract_highestpri(pq);
+        if (highestprio.pid != -1)
+        {
+          printf("Process Found!\n");
+          currentNumberProccess -= 1;
+
+          proccessRunningSJF = 1;
+          
+          kill(highestprio.pid,SIGCONT);
+
+          struct processStateInfo  proccesRunning = ProcessTable[highestprio.id - 1];
+        
+          output(proccesRunning, x, running);
+        }
+      }
+    }
+  } 
     break;
   case PHPF:
+  #pragma region "Preemptive HPF"
+  //signal()
+  {
+#pragma region "Preemptive HPF"
+  //signal()
+  {
+    int currentNumberProcess = 0;
+    int processesCompleted = 0;
 
+    // Main scheduling loop
+    while (processesCompleted < countProcesses) {
+      x = getClk();  // Get current system time
+
+      // PART 1: HANDLE NEW PROCESS ARRIVALS
+      int Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, 
+                                     &RecievedProcess, 
+                                     sizeof(struct processMsgBuff), 
+                                     0, 
+                                     IPC_NOWAIT);
+                  
+      // If a new process was received
+      if (Gen_Sched_RCV_VAL != -1) {
+        int PID = fork();
+
+        if (PID == -1) {
+          perror("Fork failed");
+          exit(-1);
+        }
+        else if (PID == 0) {
+          // Child process: prepare arguments for process execution
+          char strrunTime[6];
+          char strid[6];
+          char strarrivalTime[6];
+          sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
+          sprintf(strid, "%d", RecievedProcess.process.id);
+          sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
+          
+          char *processargs[] = {"./process.out", strrunTime, strid, strarrivalTime, NULL};
+          execv("./process.out", processargs);
+        }
+        
+        else {
+          // Parent process (scheduler)
+          RecievedProcess.process.pid = PID;
+          
+
+          // Initialize process state information
+          struct processStateInfo processInfo;
+          processInfo.id = RecievedProcess.process.id;
+          processInfo.arrivalTime = RecievedProcess.process.arrivalTime;
+          processInfo.runTime = RecievedProcess.process.runTime;
+          processInfo.remainingTime = RecievedProcess.process.runTime;
+
+          // Store process information in process table
+          ProcessTable[RecievedProcess.process.id - 1] = processInfo;
+
+          // Add process to priority queue
+          insert_PHPF_priQ(pq, RecievedProcess.process);
+
+          // Log process arrival
+          output(processInfo, x, waiting);
+
+          currentNumberProcess++;
+          
+        }
+        kill(PID, SIGSTOP);
+        printf("process Stopped\n");
+      }
+      // PART 2: HANDLE PROCESS TERMINATION
+      
+      if (processTerminate){
+        currentNumberProcess--;
+        processesCompleted++;
+        runningProcess.pid = -1;
+        // output(terminatedProcess, x, 0);
+        processTerminate = 0;
+      }
+
+      // struct processStateInfoMsgBuff terminatedProcessMsg;
+      // int termination_result = msgrcv(Terminating_Process_MSGQ, 
+      //                                 &terminatedProcessMsg, 
+      //                                 sizeof(struct processStateInfoMsgBuff) - sizeof(long), 
+      //                                 0, 
+      //                                 IPC_NOWAIT);
+      //
+      // if (termination_result != -1) {
+      //   printf("TERMINATOR!\n");
+      //   // Process has terminated
+      //   struct processStateInfo terminatedProcess = terminatedProcessMsg.processState;
+      //   
+      //   // Update process table
+      //   ProcessTable[terminatedProcess.id - 1] = terminatedProcess;
+      //
+      //   // Log process completion
+      //   printf("x: %d\n", x);
+      //   // output(terminatedProcess, x, 0);
+      //
+      //   printf("process Table with salt\n");
+      //
+      //   // Decrement active process count
+      //   currentNumberProcess--;
+      //   processesCompleted++;
+      //   printf("numberProcess: %d\t processesCompleted: %d\n", currentNumberProcess, processesCompleted);
+      //
+      //   // Reset running process
+      //   runningProcess.pid = -1;
+      //   printf("pq Head: %p,\tpid: %d\tpriority: %d\tid: %d\n", pq->head, runningProcess.pid, runningProcess.priority, runningProcess.id);
+      // }
+      // PART 3: SCHEDULE NEXT PROCESS
+      if (pq->head != NULL && (runningProcess.pid == -1 || 
+          pq->head->process.priority < runningProcess.priority)) {
+        
+        printf("Scheduling!\n");
+        // Preempt current running process if needed
+        if (runningProcess.pid != -1) {
+          kill(runningProcess.pid, SIGSTOP);
+          output(ProcessTable[runningProcess.id - 1], x, waiting);
+          insert_PHPF_priQ(pq, runningProcess);
+        }
+
+        // Get highest priority process
+        runningProcess = extract_highestpri(pq);
+
+        // Update process state to running
+        output(ProcessTable[runningProcess.id - 1], x, running);
+
+        // Start/resume the process
+        kill(runningProcess.pid, SIGCONT);
+      }
+      else{
+          printf("still with the same process!\n");
+          printf("pq Head: %p,\tpid: %d\tpriority: %d\tid: %d\n", pq->head, runningProcess.pid, runningProcess.priority, runningProcess.id);
+
+      }
+    }
+
+    // Clean up
+    cleanup_priQ(pq);
+    destroyClk(0);
+    raise(SIGINT);
     break;
+  }
+#pragma endregion
+}
   case RR:
 #pragma region "Round Robin"
 
@@ -218,7 +428,9 @@ int main(int argc, char *argv[]) {
 
 #pragma endregion
     break;
-  }
+  } 
+
+  outputStats(ProcessTable,countProcesses,x);
 
   // upon termination release the clock resources
 
@@ -245,6 +457,7 @@ void clearResources(int signum) {
 
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
+  proccessRunningSJF = 0;
   /*numberChildren -= 1;*/
   numberFinishedProcesses++;
   origin = x;
@@ -265,4 +478,3 @@ void handler_SIGCHILD(int signal) {
   return;
 }
 
-#pragma endregion

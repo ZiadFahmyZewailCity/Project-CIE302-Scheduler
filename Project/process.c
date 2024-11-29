@@ -14,11 +14,12 @@ struct processStateInfo processInfo;
 struct processStateInfoMsgBuff processMessage;
 
 int main(int agrc, char *argv[]) {
-  // raise(SIGSTOP);
   signal(SIGUSR1, stopProcess); // use SIGUSR1 as a signal for stopping
   key_t termKey = ftok("Terminating_Processes_KeyFile", 2);
   termMsgid = msgget(termKey, 0666);
   initClk();
+
+  printf("I have been created %d\n",getpid());
 
   processMessage.mtype = 1;
 
@@ -33,7 +34,7 @@ int main(int agrc, char *argv[]) {
     if (getClk() != x) {
       processInfo.remainingTime--;
       x = getClk();
-      // printf("%d\n", processInfo.remainingTime);
+      printf("%d\t %d\n",processInfo.id ,processInfo.remainingTime);
     }
   }
   destroyClk(0);
@@ -44,7 +45,7 @@ int main(int agrc, char *argv[]) {
   msgsnd(termMsgid, &processMessage,
          sizeof(struct processStateInfoMsgBuff) - sizeof(long), !IPC_NOWAIT);
   kill(getppid(), SIGUSR2);
-  return 0;
+  exit(0);
 }
 
 void stopProcess(int signum) {
