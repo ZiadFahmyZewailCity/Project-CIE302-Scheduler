@@ -324,8 +324,10 @@ void outputStats(struct processStateInfo* table,int size,double TotalTime)
   printf("size of arry = %d\n",size);
   printf("TotalTime= %.2f\n",TotalTime);
 
+
   double totalWaitTime = 0;
   double totalWTA = 0;
+
   double totalRunTime = 0;
   for(int i = 0; i < size; i++)
   {
