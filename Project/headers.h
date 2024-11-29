@@ -319,7 +319,7 @@ void output(struct processStateInfo inpProcessData, int currentTime,
 
 FILE* p_stat;
 
-void outputStats(struct processStateInfo* table,int size,int TotalTime)
+void outputStats(struct processStateInfo* table,int size,double TotalTime)
 {
   //printf("size of arry = %d\n",size);
   //printf("total time = %d\n",TotalTime);
@@ -327,7 +327,7 @@ void outputStats(struct processStateInfo* table,int size,int TotalTime)
 
   float totalWaitTime = 0;
   float totalWTA = 0;
-  int totalRunTime = 0;
+  double totalRunTime = 0;
   for(int i = 0; i < size; i++)
   {
     totalRunTime += table[i].runTime;
@@ -340,7 +340,7 @@ void outputStats(struct processStateInfo* table,int size,int TotalTime)
   printf("TotalTime= %.2f\n",TotalTime);
   double AvgWTA = totalWTA/size;
   double AvgWaitTime = totalWaitTime/size;
-  double CPU = ((double)(totalRunTime)/(TotalTime))*100;
+  double CPU = ((totalRunTime)/(TotalTime))*100;
   printf("%.2f\n",CPU);
 
 
