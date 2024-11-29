@@ -169,6 +169,9 @@ int main(int argc, char *argv[]) {
   #pragma region "Preemptive HPF"
   //signal()
   {
+#pragma region "Preemptive HPF"
+  //signal()
+  {
     int currentNumberProcess = 0;
     int processesCompleted = 0;
 
@@ -202,8 +205,6 @@ int main(int argc, char *argv[]) {
           
           char *processargs[] = {"./process.out", strrunTime, strid, strarrivalTime, NULL};
           execv("./process.out", processargs);
-          
-          //exit(-1);
         }
         
         else {
@@ -231,37 +232,53 @@ int main(int argc, char *argv[]) {
           
         }
         kill(PID, SIGSTOP);
+        printf("process Stopped\n");
       }
       // PART 2: HANDLE PROCESS TERMINATION
-      struct processStateInfoMsgBuff terminatedProcessMsg;
-      int termination_result = msgrcv(Terminating_Process_MSGQ, 
-                                      &terminatedProcessMsg, 
-                                      sizeof(struct processStateInfoMsgBuff), 
-                                      0, 
-                                      IPC_NOWAIT);
-
-      if (termination_result != -1) {
-        // Process has terminated
-        struct processStateInfo terminatedProcess = terminatedProcessMsg.processState;
-        
-        // Update process table
-        ProcessTable[terminatedProcess.id - 1] = terminatedProcess;
-
-        // Log process completion
-        output(terminatedProcess, x, running);
-
-        // Decrement active process count
+      
+      if (processTerminate){
         currentNumberProcess--;
         processesCompleted++;
-
-        // Reset running process
         runningProcess.pid = -1;
+        // output(terminatedProcess, x, 0);
+        processTerminate = 0;
       }
 
+      // struct processStateInfoMsgBuff terminatedProcessMsg;
+      // int termination_result = msgrcv(Terminating_Process_MSGQ, 
+      //                                 &terminatedProcessMsg, 
+      //                                 sizeof(struct processStateInfoMsgBuff) - sizeof(long), 
+      //                                 0, 
+      //                                 IPC_NOWAIT);
+      //
+      // if (termination_result != -1) {
+      //   printf("TERMINATOR!\n");
+      //   // Process has terminated
+      //   struct processStateInfo terminatedProcess = terminatedProcessMsg.processState;
+      //   
+      //   // Update process table
+      //   ProcessTable[terminatedProcess.id - 1] = terminatedProcess;
+      //
+      //   // Log process completion
+      //   printf("x: %d\n", x);
+      //   // output(terminatedProcess, x, 0);
+      //
+      //   printf("process Table with salt\n");
+      //
+      //   // Decrement active process count
+      //   currentNumberProcess--;
+      //   processesCompleted++;
+      //   printf("numberProcess: %d\t processesCompleted: %d\n", currentNumberProcess, processesCompleted);
+      //
+      //   // Reset running process
+      //   runningProcess.pid = -1;
+      //   printf("pq Head: %p,\tpid: %d\tpriority: %d\tid: %d\n", pq->head, runningProcess.pid, runningProcess.priority, runningProcess.id);
+      // }
       // PART 3: SCHEDULE NEXT PROCESS
       if (pq->head != NULL && (runningProcess.pid == -1 || 
           pq->head->process.priority < runningProcess.priority)) {
         
+        printf("Scheduling!\n");
         // Preempt current running process if needed
         if (runningProcess.pid != -1) {
           kill(runningProcess.pid, SIGSTOP);
@@ -278,6 +295,11 @@ int main(int argc, char *argv[]) {
         // Start/resume the process
         kill(runningProcess.pid, SIGCONT);
       }
+      else{
+          printf("still with the same process!\n");
+          printf("pq Head: %p,\tpid: %d\tpriority: %d\tid: %d\n", pq->head, runningProcess.pid, runningProcess.priority, runningProcess.id);
+
+      }
     }
 
     // Clean up
@@ -287,7 +309,7 @@ int main(int argc, char *argv[]) {
     break;
   }
 #pragma endregion
-
+}
   case RR:
 #pragma region "Round Robin"
 
