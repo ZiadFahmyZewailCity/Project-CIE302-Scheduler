@@ -45,7 +45,7 @@ int main(int agrc, char *argv[]) {
   msgsnd(termMsgid, &processMessage,
          sizeof(struct processStateInfoMsgBuff) - sizeof(long), !IPC_NOWAIT);
   kill(getppid(), SIGUSR2);
-  return 0;
+  exit(0);
 }
 
 void stopProcess(int signum) {

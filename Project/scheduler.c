@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
                                   strarrivalTime, NULL};
           execv("process.out", processargs);
           perror("Execv failed!\n");
-        };
+        }
         // Parent process (scheduler)
         RecievedProcess.process.pid = PID;
       
@@ -142,14 +142,15 @@ int main(int argc, char *argv[]) {
         insert_SJF_priQ(pq,RecievedProcess.process);
           
         //Stopping proccess that has just been forked  
-        kill(PID,SIGUSR1);
-
+        kill(PID,SIGSTOP);
       } 
+
       if(proccessRunningSJF == 0)
       {
         struct processData highestprio = extract_highestpri(pq);
-        if (highestprio.pid =! -1)
+        if (highestprio.pid != -1)
         {
+          printf("Process Found!\n");
           currentNumberProccess -= 1;
 
           proccessRunningSJF = 1;
