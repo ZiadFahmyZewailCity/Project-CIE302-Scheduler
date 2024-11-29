@@ -14,11 +14,12 @@ struct processStateInfo processInfo;
 struct processStateInfoMsgBuff processMessage;
 
 int main(int agrc, char *argv[]) {
-  // raise(SIGSTOP);
   signal(SIGUSR1, stopProcess); // use SIGUSR1 as a signal for stopping
   key_t termKey = ftok("Terminating_Processes_KeyFile", 2);
   termMsgid = msgget(termKey, 0666);
   initClk();
+
+  printf("I have been created %d\n",getpid());
 
   processMessage.mtype = 1;
 

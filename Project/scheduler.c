@@ -25,6 +25,7 @@ void clearResources(int signum);
 
 // Flag used to notify scheduler that the process it holds has been terminated
 int processTerminate = 0;
+int proccessRunningSJF = 0;
 int terminatedProcessId = -2;
 
 int numberFinishedProcesses = 0;
@@ -96,27 +97,21 @@ int main(int argc, char *argv[]) {
 
 
   // TODO implement the scheduler :)
-  printf("%d\n", alg);
+  printf("algo = %d\n", alg);
   switch (alg) {
   case SJF:
   {
     int currentNumberProccess = 0;
-    printf("I am creating a proccess\n");
-
     while (numberFinishedProcesses < countProcesses) {
       
       x = getClk();
-      // printf("Entered the loop!\n");
-      //Will add arrving messages to prioQUEUE
-      Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, IPC_NOWAIT);
-      // printf("Mail checked: %d\n", Gen_Sched_RCV_VAL);
-      // printf("Checking the mail!\n");
-      if (Gen_Sched_RCV_VAL != -1 ) {
+      Gen_Sched_RCV_VAL =
+          msgrcv(Gen_Sched_MSGQ, &RecievedProcess, sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
+      if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
         int PID = fork();
-        printf("SPAGHETTI! %d\n", PID);
+        printf("Child Fork! %d\n", PID);
 
         if (PID == 0) {
-          printf("I am just a child\n");
           char strrunTime[6];
           char strid[6];
           char strarrivalTime[6];
@@ -125,43 +120,39 @@ int main(int argc, char *argv[]) {
           sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
           char *processargs[] = {"./process.out", strrunTime, strid,
                                   strarrivalTime, NULL};
-          printf("A PROCESSSSSS!\n");
           execv("process.out", processargs);
           perror("Execv failed!\n");
-        }
-        else
-        {
-          printf("el wa7ed 3agez 5alas\n");
-          // Parent process (scheduler)
-          RecievedProcess.process.pid = PID;
-        
+        };
+        // Parent process (scheduler)
+        RecievedProcess.process.pid = PID;
+      
 
-          // Initializing some variables for process in the process table
-          ProcessTable[RecievedProcess.process.id - 1].arrivalTime = RecievedProcess.process.arrivalTime;
-          ProcessTable[RecievedProcess.process.id - 1].runTime = RecievedProcess.process.runTime;
-          ProcessTable[RecievedProcess.process.id - 1].remainingTime = RecievedProcess.process.runTime;
-          ProcessTable[RecievedProcess.process.id - 1].id = RecievedProcess.process.id;
+        // Initializing some variables for process in the process table
+        ProcessTable[RecievedProcess.process.id - 1].arrivalTime = RecievedProcess.process.arrivalTime;
+        ProcessTable[RecievedProcess.process.id - 1].runTime = RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].remainingTime = RecievedProcess.process.runTime;
+        ProcessTable[RecievedProcess.process.id - 1].id = RecievedProcess.process.id;
+        
+        RecievedProcess.process.pid = PID;
           
-          RecievedProcess.process.pid = PID;
-            
-          currentNumberProccess += 1;
-            
-          // Adding process to queue
-          insert_SJF_priQ(pq,RecievedProcess.process);
-            
-          //Stopping proccess that has just been forked  
-          kill(PID,SIGSTOP);
-        }
+        currentNumberProccess += 1;
+        printf("Current number proccess section 1 = %d\n",currentNumberProccess);
+          
+        // Adding process to queue
+        insert_SJF_priQ(pq,RecievedProcess.process);
+          
+        //Stopping proccess that has just been forked  
+        kill(PID,SIGUSR1);
+
       } 
-      //This flag is changed by the signal sent from the proccess about it being termianted
-      if(processTerminate == 1 || currentNumberProccess == 0)
+      if(proccessRunningSJF == 0)
       {
         struct processData highestprio = extract_highestpri(pq);
         if (highestprio.pid =! -1)
         {
           currentNumberProccess -= 1;
 
-          processTerminate = 0;
+          proccessRunningSJF = 1;
           
           kill(highestprio.pid,SIGCONT);
 
@@ -169,54 +160,9 @@ int main(int argc, char *argv[]) {
         
           output(proccesRunning, x, running);
         }
-        else
-        {
-          //if the current number of Proccesses is zero and yet not all proccesses have been sent the scheduler waits to create a new proccess
-          Gen_Sched_RCV_VAL = msgrcv(Gen_Sched_MSGQ, &RecievedProcess,sizeof(struct processMsgBuff), 0, !IPC_NOWAIT);
-          if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
-            int PID = fork();
-            if (PID == 0) {
-              char strrunTime[6];
-              char strid[6];
-              char strarrivalTime[6];
-              sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
-              sprintf(strid, "%d", RecievedProcess.process.id);
-              sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
-              char *processargs[] = {"./process.out", strrunTime, strid,
-                                      strarrivalTime, NULL};
-              execv("process.out", processargs);
-              perror("Exec failed!\n");
-            }
-            else
-            {
-              // Parent process (scheduler)
-              RecievedProcess.process.pid = PID;
-            
-
-              // Initializing some variables for process in the process table
-              ProcessTable[RecievedProcess.process.id - 1].arrivalTime = RecievedProcess.process.arrivalTime;
-              ProcessTable[RecievedProcess.process.id - 1].runTime = RecievedProcess.process.runTime;
-              ProcessTable[RecievedProcess.process.id - 1].remainingTime = RecievedProcess.process.runTime;
-              ProcessTable[RecievedProcess.process.id - 1].id = RecievedProcess.process.id;
-              
-              RecievedProcess.process.pid = PID;
-                
-              currentNumberProccess += 1;
-                
-              // Adding process to queue
-              insert_SJF_priQ(pq,RecievedProcess.process);
-                
-              //Stopping proccess that has just been forked  
-              kill(PID,SIGSTOP);
-            }
-          }
-        } 
       }
     }
-  }
-
-
-
+  } 
     break;
   case PHPF:
   #pragma region "Preemptive HPF"
@@ -488,6 +434,7 @@ void clearResources(int signum) {
 
 void handler_SIGCHILD(int signal) {
   processTerminate = 1;
+  proccessRunningSJF = 0;
   /*numberChildren -= 1;*/
   numberFinishedProcesses++;
   origin = x;
