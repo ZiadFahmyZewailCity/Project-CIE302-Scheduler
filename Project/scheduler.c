@@ -168,9 +168,7 @@ int main(int argc, char *argv[]) {
   case PHPF:
   #pragma region "Preemptive HPF"
   //signal()
-  {
-#pragma region "Preemptive HPF"
-  //signal()
+{
   {
     int currentNumberProcess = 0;
     int processesCompleted = 0;
@@ -305,7 +303,6 @@ int main(int argc, char *argv[]) {
     // Clean up
     cleanup_priQ(pq);
     destroyClk(0);
-    raise(SIGINT);
     break;
   }
 #pragma endregion
@@ -422,11 +419,7 @@ int main(int argc, char *argv[]) {
         // Outputs the data when process continues or starts
         output(current_process_info, x, running);
       }
-
-#pragma endregion
     }
-
-#pragma endregion
     break;
   } 
 

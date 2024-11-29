@@ -319,35 +319,33 @@ void output(struct processStateInfo inpProcessData, int currentTime,
 
 FILE* p_stat;
 
-void outputStats(struct processStateInfo* table,int size,int TotalTime)
+void outputStats(struct processStateInfo* table,int size,double TotalTime)
 {
-  //printf("size of arry = %d\n",size);
-  //printf("total time = %d\n",TotalTime);
+  printf("size of arry = %d\n",size);
+  printf("TotalTime= %.2f\n",TotalTime);
 
-
-  float totalWaitTime = 0;
-  float totalWTA = 0;
-  int totalRunTime = 0;
+  double totalWaitTime = 0;
+  double totalWTA = 0;
+  double totalRunTime = 0;
   for(int i = 0; i < size; i++)
   {
+    printf("runtime = %d\n",table[i].runTime);
     totalRunTime += table[i].runTime;
     totalWTA += (table[i].finishTime -table[i].arrivalTime)/(table[i].runTime);
     totalWaitTime += (table[i].finishTime -table[i].arrivalTime) - table[i].runTime;
   }
-  //printf("TotalWTA= %d\n",totalWTA);
-  //printf("TotalWaitTime= %d\n",totalWaitTime);
+  printf("TotalWTA= %d\n",totalWTA);
+  printf("TotalWaitTime= %.2f\n",totalWaitTime);
   printf("TotalRuntime= %.2f\n",totalRunTime);
-  printf("TotalTime= %.2f\n",TotalTime);
+
   double AvgWTA = totalWTA/size;
   double AvgWaitTime = totalWaitTime/size;
-  double CPU = ((double)(totalRunTime)/(TotalTime))*100;
-  printf("%.2f\n",CPU);
+  double CPU = ((totalRunTime)/(TotalTime))*100;
 
+  printf("CPU = %.2f\n",CPU);
 
-  //printf("AvgWTA= %.2f\n",AvgWTA);
-  //printf("AvgWaitTime= %.2f\n",AvgWaitTime);
-  //printf("CPU= %.1f\n",CPU);
-
+  printf("AvgWTA= %.2f\n",AvgWTA);
+  printf("AvgWaitTime= %.2f\n",AvgWaitTime);
 
   p_stat = fopen("scheduler.perf", "w");
   if (p_stat == NULL) {
