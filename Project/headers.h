@@ -258,7 +258,7 @@ FILE *p_out;
 
 void output(struct processStateInfo inpProcessData, int currentTime,
             enum state pstate) {
-  p_out = fopen("check.txt", "a");
+  p_out = fopen("Scheduler.log", "a");
   if (p_out == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
     return;
@@ -271,12 +271,12 @@ void output(struct processStateInfo inpProcessData, int currentTime,
   // extra parameters, number should be equal to the enum of terminated status
   if (inpProcessData.remainingTime == 0) {
     int turnAround = currentTime - inpProcessData.arrivalTime;
-    int weightedTurnAround =
-        (currentTime - inpProcessData.arrivalTime) / inpProcessData.runTime;
+    double weightedTurnAround =
+        (double)(currentTime - inpProcessData.arrivalTime) / inpProcessData.runTime;
 
     fprintf(p_out,
             "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain "
-            "%d \twait %d\t \tTA %d \tWTA %d\n",
+            "%d \twait %d\t \tTA %d \tWTA %.2f\n",
             currentTime, inpProcessData.id, inpProcessData.arrivalTime,
             inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
             turnAround, weightedTurnAround);
@@ -316,6 +316,51 @@ void output(struct processStateInfo inpProcessData, int currentTime,
     fclose(p_out);
   }
 }
+
+FILE* p_stat;
+
+void outputStats(struct processStateInfo* table,int size,int TotalTime)
+{
+  //printf("size of arry = %d\n",size);
+  //printf("total time = %d\n",TotalTime);
+
+
+  float totalWaitTime = 0;
+  float totalWTA = 0;
+  int totalRunTime = 0;
+  for(int i = 0; i < size; i++)
+  {
+    totalRunTime += table[i].runTime;
+    totalWTA += (table[i].finishTime -table[i].arrivalTime)/(table[i].runTime);
+    totalWaitTime += (table[i].finishTime -table[i].arrivalTime) - table[i].runTime;
+  }
+  //printf("TotalWTA= %d\n",totalWTA);
+  //printf("TotalWaitTime= %d\n",totalWaitTime);
+  printf("TotalRuntime= %.2f\n",totalRunTime);
+  printf("TotalTime= %.2f\n",TotalTime);
+  double AvgWTA = totalWTA/size;
+  double AvgWaitTime = totalWaitTime/size;
+  double CPU = ((double)(totalRunTime)/(TotalTime))*100;
+  printf("%.2f\n",CPU);
+
+
+  //printf("AvgWTA= %.2f\n",AvgWTA);
+  //printf("AvgWaitTime= %.2f\n",AvgWaitTime);
+  //printf("CPU= %.1f\n",CPU);
+
+
+  p_stat = fopen("scheduler.perf", "w");
+  if (p_stat == NULL) {
+    perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+    return;
+  }
+  fprintf(p_stat,"CPU utilization = %.2f\n",CPU);
+  fprintf(p_stat,"Avg WTA = %.2f\n",AvgWTA);
+  fprintf(p_stat,"Avg waiting = %.2f\n",AvgWaitTime);
+  fclose(p_stat);
+}
+
+
 
 #pragma endregion
 

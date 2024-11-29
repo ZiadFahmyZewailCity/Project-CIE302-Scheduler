@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   PriorityQueue *pq = initialize_priQ();
 #pragma region "output init"
-  p_out = fopen("check.txt", "w");
+  p_out = fopen("Scheduler.log", "w");
   fprintf(p_out, "# At \ttime x \tprocess y \tstate arr w \ttotal z \tremain y "
                  "\twait k\n");
   fclose(p_out);
@@ -408,7 +408,7 @@ int main(int argc, char *argv[]) {
     break;
   } 
 
-  printf("hell\n");
+  outputStats(ProcessTable,countProcesses,x);
 
   // upon termination release the clock resources
 
