@@ -20,16 +20,20 @@ typedef short bool;
 #pragma region "Process data structure"
 enum state { running = 1, waiting = 2 };
 
+enum OPMEM { FREE = 1, ALLOCATE = 2};
+
 struct processData {
   unsigned int id;
   unsigned int arrivalTime;
   unsigned int runTime;
   unsigned int priority;
+  unsigned int memsize;
   int pid;
-  // enum state pstate;
 };
 
 enum schedulingAlgorithm { SJF = 1, PHPF = 2, RR = 3};
+
+
 
 struct processStateInfo {
   unsigned int id;
@@ -38,7 +42,11 @@ struct processStateInfo {
   unsigned int runTime;
   unsigned int remainingTime;
   unsigned int finishTime;
+  unsigned int offset;
+  unsigned int memSize;
 };
+
+
 
 #pragma endregion
 
@@ -239,9 +247,9 @@ struct processData *load(char *inpFileName, int *count_processes) {
 
   // itterating through file to get data of each
   for (int i = 0; i < *count_processes; i++) {
-    if (fscanf(p_file, "%d\t%d\t%d\t%d\t", &p_arr_process[i].id,
+    if (fscanf(p_file, "%d\t%d\t%d\t%d\t%d", &p_arr_process[i].id,
                &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime,
-               &p_arr_process[i].priority) != 4) {
+               &p_arr_process[i].priority,&p_arr_process[i].memsize) != 5) {
       printf("Issue reading from file");
     };
   }
@@ -255,6 +263,35 @@ struct processData *load(char *inpFileName, int *count_processes) {
 #pragma region outputFunction
 
 FILE *p_out;
+
+
+void outputMEM(struct processStateInfo inpProcessData, int currentTime, enum OPMEM operation)
+{
+  p_out = fopen("memory.log", "a");
+  if (p_out == NULL) {
+    perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
+    return;
+  }
+
+  if (operation == FREE)
+  {
+    fprintf(p_out, "# At \ttime %d \tfreed %d \tbytes for process %d \tfrom %d to %d\n",
+    currentTime,inpProcessData.memSize,inpProcessData.id,inpProcessData.offset,
+    inpProcessData.offset + inpProcessData.memSize);
+  }
+  else
+  {
+    fprintf(p_out, "# At \ttime %d \tallocated %d \tbytes for process %d \tfrom %d to %d\n",
+    currentTime,inpProcessData.memSize, inpProcessData.id,inpProcessData.offset,
+    inpProcessData.offset + inpProcessData.memSize);
+  }
+
+
+  fclose(p_out);
+
+}
+
+
 
 void output(struct processStateInfo inpProcessData, int currentTime,
             enum state pstate) {
@@ -324,10 +361,8 @@ void outputStats(struct processStateInfo* table,int size,double TotalTime)
   printf("size of arry = %d\n",size);
   printf("TotalTime= %.2f\n",TotalTime);
 
-
   double totalWaitTime = 0;
   double totalWTA = 0;
-
   double totalRunTime = 0;
   for(int i = 0; i < size; i++)
   {

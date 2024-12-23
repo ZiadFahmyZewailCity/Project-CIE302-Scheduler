@@ -92,6 +92,10 @@ int main(int argc, char *argv[]) {
                  "\twait k\n");
   fclose(p_out);
 #pragma endregion
+  p_out = fopen("memory.log", "w");
+  fprintf(p_out, "# At \ttime x \tallocated y \tbytes for process z \tfrom i to j\n");
+  fclose(p_out);
+
 
 //printf("I have reached before the switchcase");
 
