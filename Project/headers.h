@@ -20,7 +20,7 @@ typedef short bool;
 #pragma region "Process data structure"
 enum state { running = 1, waiting = 2 };
 
-enum OPMEM { FREE = 1, ALLOCATE = 2};
+enum OPMEM { FREE = 1, ALLOCATE = 2 };
 
 struct processData {
   unsigned int id;
@@ -31,9 +31,7 @@ struct processData {
   int pid;
 };
 
-enum schedulingAlgorithm { SJF = 1, PHPF = 2, RR = 3};
-
-
+enum schedulingAlgorithm { SJF = 1, PHPF = 2, RR = 3 };
 
 struct processStateInfo {
   unsigned int id;
@@ -45,8 +43,6 @@ struct processStateInfo {
   unsigned int offset;
   unsigned int memSize;
 };
-
-
 
 #pragma endregion
 
@@ -249,7 +245,7 @@ struct processData *load(char *inpFileName, int *count_processes) {
   for (int i = 0; i < *count_processes; i++) {
     if (fscanf(p_file, "%d\t%d\t%d\t%d\t%d", &p_arr_process[i].id,
                &p_arr_process[i].arrivalTime, &p_arr_process[i].runTime,
-               &p_arr_process[i].priority,&p_arr_process[i].memsize) != 5) {
+               &p_arr_process[i].priority, &p_arr_process[i].memsize) != 5) {
       printf("Issue reading from file");
     };
   }
@@ -264,34 +260,31 @@ struct processData *load(char *inpFileName, int *count_processes) {
 
 FILE *p_out;
 
-
-void outputMEM(struct processStateInfo inpProcessData, int currentTime, enum OPMEM operation)
-{
+void outputMEM(struct processStateInfo inpProcessData, int currentTime,
+               enum OPMEM operation) {
   p_out = fopen("memory.log", "a");
   if (p_out == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
     return;
   }
 
-  if (operation == FREE)
-  {
-    fprintf(p_out, "# At \ttime %d \tfreed %d \tbytes for process %d \tfrom %d to %d\n",
-    currentTime,inpProcessData.memSize,inpProcessData.id,inpProcessData.offset,
-    inpProcessData.offset + inpProcessData.memSize);
+  if (operation == FREE) {
+    fprintf(
+        p_out,
+        "# At \ttime %d \tfreed %d \tbytes for process %d \tfrom %d to %d\n",
+        currentTime, inpProcessData.memSize, inpProcessData.id,
+        inpProcessData.offset, inpProcessData.offset + inpProcessData.memSize);
+  } else {
+    fprintf(p_out,
+            "# At \ttime %d \tallocated %d \tbytes for process %d \tfrom %d to "
+            "%d\n",
+            currentTime, inpProcessData.memSize, inpProcessData.id,
+            inpProcessData.offset,
+            inpProcessData.offset + inpProcessData.memSize);
   }
-  else
-  {
-    fprintf(p_out, "# At \ttime %d \tallocated %d \tbytes for process %d \tfrom %d to %d\n",
-    currentTime,inpProcessData.memSize, inpProcessData.id,inpProcessData.offset,
-    inpProcessData.offset + inpProcessData.memSize);
-  }
-
 
   fclose(p_out);
-
 }
-
-
 
 void output(struct processStateInfo inpProcessData, int currentTime,
             enum state pstate) {
@@ -309,7 +302,8 @@ void output(struct processStateInfo inpProcessData, int currentTime,
   if (inpProcessData.remainingTime == 0) {
     int turnAround = currentTime - inpProcessData.arrivalTime;
     double weightedTurnAround =
-        (double)(currentTime - inpProcessData.arrivalTime) / inpProcessData.runTime;
+        (double)(currentTime - inpProcessData.arrivalTime) /
+        inpProcessData.runTime;
 
     fprintf(p_out,
             "At \ttime %d \tprocess %d \tfinished\t arr %d \ttotal %d \tremain "
@@ -317,7 +311,7 @@ void output(struct processStateInfo inpProcessData, int currentTime,
             currentTime, inpProcessData.id, inpProcessData.arrivalTime,
             inpProcessData.runTime, inpProcessData.remainingTime, wait_time,
             turnAround, weightedTurnAround);
-            fclose(p_out);
+    fclose(p_out);
   } else {
     switch (pstate) {
 
@@ -354,48 +348,46 @@ void output(struct processStateInfo inpProcessData, int currentTime,
   }
 }
 
-FILE* p_stat;
+FILE *p_stat;
 
-void outputStats(struct processStateInfo* table,int size,double TotalTime)
-{
-  printf("size of arry = %d\n",size);
-  printf("TotalTime= %.2f\n",TotalTime);
+void outputStats(struct processStateInfo *table, int size, double TotalTime) {
+  printf("size of arry = %d\n", size);
+  printf("TotalTime= %.2f\n", TotalTime);
 
   double totalWaitTime = 0;
   double totalWTA = 0;
   double totalRunTime = 0;
-  for(int i = 0; i < size; i++)
-  {
-    printf("runtime = %d\n",table[i].runTime);
+  for (int i = 0; i < size; i++) {
+    printf("runtime = %d\n", table[i].runTime);
     totalRunTime += table[i].runTime;
-    totalWTA += (table[i].finishTime -table[i].arrivalTime)/(table[i].runTime);
-    totalWaitTime += (table[i].finishTime -table[i].arrivalTime) - table[i].runTime;
+    totalWTA +=
+        (table[i].finishTime - table[i].arrivalTime) / (table[i].runTime);
+    totalWaitTime +=
+        (table[i].finishTime - table[i].arrivalTime) - table[i].runTime;
   }
-  printf("TotalWTA= %d\n",totalWTA);
-  printf("TotalWaitTime= %.2f\n",totalWaitTime);
-  printf("TotalRuntime= %.2f\n",totalRunTime);
+  printf("TotalWTA= %d\n", totalWTA);
+  printf("TotalWaitTime= %.2f\n", totalWaitTime);
+  printf("TotalRuntime= %.2f\n", totalRunTime);
 
-  double AvgWTA = totalWTA/size;
-  double AvgWaitTime = totalWaitTime/size;
-  double CPU = ((totalRunTime)/(TotalTime))*100;
+  double AvgWTA = totalWTA / size;
+  double AvgWaitTime = totalWaitTime / size;
+  double CPU = ((totalRunTime) / (TotalTime)) * 100;
 
-  printf("CPU = %.2f\n",CPU);
+  printf("CPU = %.2f\n", CPU);
 
-  printf("AvgWTA= %.2f\n",AvgWTA);
-  printf("AvgWaitTime= %.2f\n",AvgWaitTime);
+  printf("AvgWTA= %.2f\n", AvgWTA);
+  printf("AvgWaitTime= %.2f\n", AvgWaitTime);
 
   p_stat = fopen("scheduler.perf", "w");
   if (p_stat == NULL) {
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
     return;
   }
-  fprintf(p_stat,"CPU utilization = %.2f\n",CPU);
-  fprintf(p_stat,"Avg WTA = %.2f\n",AvgWTA);
-  fprintf(p_stat,"Avg waiting = %.2f\n",AvgWaitTime);
+  fprintf(p_stat, "CPU utilization = %.2f\n", CPU);
+  fprintf(p_stat, "Avg WTA = %.2f\n", AvgWTA);
+  fprintf(p_stat, "Avg waiting = %.2f\n", AvgWaitTime);
   fclose(p_stat);
 }
-
-
 
 #pragma endregion
 
@@ -437,3 +429,195 @@ void destroyClk(bool terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
 }
+
+#pragma endregion
+
+#pragma region "Memory Management Phase 2"
+
+struct memBlock {
+  unsigned int size;
+  int PID = -1;
+  unsigned int starts;
+  struct memBlock *next;
+};
+
+bool memoryCollect(struct memBlock **emptyMemoryBlocks);
+
+bool memoryAllocate(int procSize, int PID,
+                    struct memBlock **allocatedMemoryBlocks,
+                    struct memBlock **emptyMemoryBlocks) {
+  struct memBlock *nextBlock = *emptyMemoryBlocks;
+  struct memBlock *prevBlock = nullptr;
+  struct memBlock *allocatedBlock = nullptr;
+
+  // Find a the smallest empty memory block that can fit the process
+  while (nextBlock != nullptr) {
+    if (nextBlock->size > procSize &&
+        (allocatedBlock == nullptr || nextBlock->size < allocatedBlock->size)) {
+      allocatedBlock = nextBlock;
+    };
+    nextBlock = nextBlock->next;
+  }
+
+  // If there is no block big enough, return 0
+  if (allocatedBlock == nullptr)
+    return 0;
+
+  // If the memory block found is not the first element, find the previous block
+  // element
+  if (allocatedBlock != *emptyMemoryBlocks) {
+    prevBlock = *emptyMemoryBlocks;
+    while (prevBlock->next != allocatedBlock) {
+      prevBlock = prevBlock->next;
+    };
+  }
+
+  // While the size of the block is larger than twice the size of the block,
+  // split the block
+  while (allocatedBlock->size >= 2 * procSize) {
+    allocatedBlock->size /= 2;
+
+    struct memBlock *splittedBlock;
+    splittedBlock = (struct memBlock *)malloc(sizeof(struct memBlock));
+
+    splittedBlock->size = allocatedBlock->size;
+    splittedBlock->starts = allocatedBlock->starts + allocatedBlock->size;
+    splittedBlock->next = allocatedBlock->next;
+
+    allocatedBlock->next = splittedBlock;
+  }
+
+  // If the block is the first element in the empty list, set the new start to
+  // the list to the next block
+  if (prevBlock == nullptr) {
+    *emptyMemoryBlocks = allocatedBlock->next;
+  } else {
+    prevBlock->next = allocatedBlock->next;
+  }
+
+  // Initialize the allocated block with it's process id and set next to null
+
+  allocatedBlock->PID = PID;
+  allocatedBlock->next = nullptr;
+
+  prevBlock = nullptr;
+  nextBlock = *allocatedMemoryBlocks;
+
+  // If the allocated memory list is empty, initialize it with the allocated
+  // block
+  if (nextBlock == nullptr) {
+    *allocatedMemoryBlocks = allocatedBlock;
+  } else {
+    // Else, order it by it's starting position in the list.
+
+    while (nextBlock != nullptr && allocatedBlock->starts > nextBlock->starts) {
+      prevBlock = nextBlock;
+      nextBlock = nextBlock->next;
+    }
+
+    prevBlock->next = allocatedBlock;
+    allocatedBlock->next = nextBlock;
+  }
+  return 1;
+}
+
+bool memoryDeallocate(int procSize, int PID,
+                      struct memBlock **allocatedMemoryBlocks,
+                      struct memBlock **emptyMemoryBlocks) {
+  // Temporary next and previous pointers in allocated memory
+  struct memBlock *nextBlock = *allocatedMemoryBlocks;
+  struct memBlock *prevBlock = nullptr;
+
+  // Deallocated memory block
+  struct memBlock *blockDeallocated;
+
+  // Looking for memory block to be deallocated
+
+  if (nextBlock != nullptr && nextBlock->PID == PID) {
+    // Checks if the block is the first element
+    *allocatedMemoryBlocks = nextBlock->next;
+  } else {
+    while (nextBlock != nullptr && nextBlock->PID != PID) {
+      prevBlock = nextBlock;
+      nextBlock = nextBlock->next;
+    };
+  }
+
+  // Did not find PID in allocated memory blocks, returning 0
+  if (nextBlock == nullptr) {
+    return 0;
+  };
+
+  // Found PID that's not the first element of allocated memory blocks,
+  // dellocating...
+  if (prevBlock != nullptr) {
+    prevBlock->next = nextBlock->next;
+  };
+
+  blockDeallocated = nextBlock;
+
+  // Temporary next and previous pointers in deallocated memory
+  nextBlock = *emptyMemoryBlocks;
+  prevBlock = nullptr;
+
+  blockDeallocated->PID = -1;
+
+  // If the empty memory blocks list is empty, set list to start at deallocated
+  // block
+  if (nextBlock == nullptr) {
+    blockDeallocated->next = nullptr;
+    *emptyMemoryBlocks = blockDeallocated;
+
+    return 1;
+  }
+
+  // else, insert into list based on address order.
+  while (nextBlock != nullptr && blockDeallocated->starts > nextBlock->starts) {
+    prevBlock = nextBlock;
+    nextBlock = nextBlock->next;
+  }
+  if (prevBlock == nullptr) {
+    blockDeallocated->next = nextBlock;
+    *emptyMemoryBlocks = blockDeallocated;
+  } else {
+    blockDeallocated->next = prevBlock->next;
+    prevBlock->next = blockDeallocated;
+  }
+
+  // Keep collecting as long as there is memory to collect
+  while (memoryCollect(emptyMemoryBlocks))
+    ;
+  return 1;
+}
+
+bool memoryCollect(struct memBlock **emptyMemoryBlocks) {
+  // If the list is empty, return 0
+  if (*emptyMemoryBlocks == nullptr) {
+    return 0;
+  };
+  struct memBlock *prevBlock = *emptyMemoryBlocks;
+  struct memBlock *nextBlock = prevBlock->next;
+
+  // While the next block is not empty, and the XOR of the start value of the
+  // previous block and the size of the block (ex: 1100^10=1110, 1110^10!=11100)
+  // does not give the start of the next block, iterate
+  while (nextBlock != nullptr &&
+         (prevBlock->starts ^ prevBlock->size) != nextBlock->starts) {
+    prevBlock = nextBlock;
+    nextBlock = nextBlock->next;
+  };
+
+  // If no match is found, return 0
+  if (nextBlock == nullptr)
+    return 0;
+
+  // If two split pairs are found, collect them together then return 1
+  prevBlock->next = nextBlock->next;
+  prevBlock->size *= 2;
+
+  free(nextBlock);
+
+  return 1;
+}
+
+#pragma endregion
