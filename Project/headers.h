@@ -521,8 +521,7 @@ bool memoryAllocate(int procSize, int PID,
   return 1;
 }
 
-bool memoryDeallocate(int procSize, int PID,
-                      struct memBlock **allocatedMemoryBlocks,
+bool memoryDeallocate(int PID, struct memBlock **allocatedMemoryBlocks,
                       struct memBlock **emptyMemoryBlocks) {
   // Temporary next and previous pointers in allocated memory
   struct memBlock *nextBlock = *allocatedMemoryBlocks;

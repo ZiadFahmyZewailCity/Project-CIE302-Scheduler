@@ -41,6 +41,12 @@ void handler_SIGCHILD(int signal);
 
 #pragma endregion
 
+bool processAllocated = 0;
+bool processWaitingFlag = 0;
+
+struct memBlock *allocatedMemoryBlocks;
+struct memBlock *emptyMemoryBlocks;
+
 int main(int argc, char *argv[]) {
 #pragma region "initialization"
   signal(SIGINT, clearResources);
@@ -53,6 +59,11 @@ int main(int argc, char *argv[]) {
   unsigned int countProcesses = atoi(argv[3]);
 
 #pragma endregion
+
+  emptyMemoryBlocks = (struct memBlock *)malloc(sizeof(struct memBlock));
+  emptyMemoryBlocks->starts = 0;
+  emptyMemoryBlocks->size = 1024;
+  emptyMemoryBlocks->next = nullptr;
 
   ProcessTable = (struct processStateInfo *)malloc(
       countProcesses * sizeof(struct processStateInfo));
@@ -107,49 +118,88 @@ int main(int argc, char *argv[]) {
     while (numberFinishedProcesses < countProcesses) {
 
       x = getClk();
-      Gen_Sched_RCV_VAL =
-          msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
-                 sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
-      if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
-        int PID = fork();
-        printf("Child Fork! %d\n", PID);
+      if (!processWaitingFlag) {
 
-        if (PID == 0) {
-          char strrunTime[6];
-          char strid[6];
-          char strarrivalTime[6];
-          sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
-          sprintf(strid, "%d", RecievedProcess.process.id);
-          sprintf(strarrivalTime, "%d", RecievedProcess.process.arrivalTime);
-          char *processargs[] = {"./process.out", strrunTime, strid,
-                                 strarrivalTime, NULL};
-          execv("process.out", processargs);
-          perror("Execv failed!\n");
+        Gen_Sched_RCV_VAL =
+            msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
+                   sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
+        if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
+
+          processWaitingFlag = 1;
+          processAllocated = memoryAllocate(
+              RecievedProcess.process.memsize, RecievedProcess.process.id,
+              &allocatedMemoryBlocks, &emptyMemoryBlocks);
         }
-        // Parent process (scheduler)
-        RecievedProcess.process.pid = PID;
 
-        // Initializing some variables for process in the process table
-        ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
-            RecievedProcess.process.arrivalTime;
-        ProcessTable[RecievedProcess.process.id - 1].runTime =
-            RecievedProcess.process.runTime;
-        ProcessTable[RecievedProcess.process.id - 1].remainingTime =
-            RecievedProcess.process.runTime;
-        ProcessTable[RecievedProcess.process.id - 1].id =
-            RecievedProcess.process.id;
+        if (processWaitingFlag) {
+          if (processAllocated) {
 
-        RecievedProcess.process.pid = PID;
+            int PID = fork();
+            printf("Child Fork! %d\n", PID);
 
-        currentNumberProccess += 1;
-        printf("Current number proccess section 1 = %d\n",
-               currentNumberProccess);
+            if (PID == 0) {
+              char strrunTime[6];
+              char strid[6];
+              char strarrivalTime[6];
+              sprintf(strrunTime, "%d", RecievedProcess.process.runTime);
+              sprintf(strid, "%d", RecievedProcess.process.id);
+              sprintf(strarrivalTime, "%d",
+                      RecievedProcess.process.arrivalTime);
+              char *processargs[] = {"./process.out", strrunTime, strid,
+                                     strarrivalTime, NULL};
+              execv("process.out", processargs);
+              perror("Execv failed!\n");
+            }
+            // Parent process (scheduler)
+            RecievedProcess.process.pid = PID;
 
-        // Adding process to queue
-        insert_SJF_priQ(pq, RecievedProcess.process);
+            // Finding the allocated memory block
+            struct memBlock *tempMemoryBlock = allocatedMemoryBlocks;
+            while (tempMemoryBlock->PID != RecievedProcess.process.id) {
+              tempMemoryBlock = tempMemoryBlock->next;
+            }
 
-        // Stopping proccess that has just been forked
-        kill(PID, SIGSTOP);
+#pragma region "Initializing some variables for process in the process table"
+
+            ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
+                RecievedProcess.process.arrivalTime;
+            ProcessTable[RecievedProcess.process.id - 1].runTime =
+                RecievedProcess.process.runTime;
+            ProcessTable[RecievedProcess.process.id - 1].remainingTime =
+                RecievedProcess.process.runTime;
+            ProcessTable[RecievedProcess.process.id - 1].id =
+                RecievedProcess.process.id;
+
+            ProcessTable[RecievedProcess.process.id - 1].memSize =
+                RecievedProcess.process.memsize;
+            ProcessTable[RecievedProcess.process.id - 1].offset =
+                tempMemoryBlock->starts;
+
+#pragma endregion
+
+            RecievedProcess.process.pid = PID;
+
+            currentNumberProccess += 1;
+            printf("Current number proccess section 1 = %d\n",
+                   currentNumberProccess);
+
+            // Adding process to queue
+            insert_SJF_priQ(pq, RecievedProcess.process);
+
+            // Stopping proccess that has just been forked
+            kill(PID, SIGSTOP);
+
+            outputMEM(ProcessTable[RecievedProcess.process.id - 1], x,
+                      ALLOCATE);
+
+            processWaitingFlag = 0;
+
+          } else {
+            processAllocated = memoryAllocate(
+                RecievedProcess.process.memsize, RecievedProcess.process.id,
+                &allocatedMemoryBlocks, &emptyMemoryBlocks);
+          }
+        }
       }
 
       if (proccessRunningSJF == 0) {
@@ -473,7 +523,13 @@ void handler_SIGCHILD(int signal) {
   };
   terminatedProcessId = finishedProcessState.processState.id;
 
+  memoryDeallocate(ProcessTable[finishedProcessState.processState.id - 1].id,
+                   &allocatedMemoryBlocks, &emptyMemoryBlocks);
+
+  outputMEM(ProcessTable[finishedProcessState.processState.id - 1], x, FREE);
+
   output(finishedProcessState.processState, x, waiting);
+
   ProcessTable[finishedProcessState.processState.id - 1] =
       finishedProcessState.processState;
   return;
