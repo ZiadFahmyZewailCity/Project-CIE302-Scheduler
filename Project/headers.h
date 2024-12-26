@@ -267,20 +267,25 @@ void outputMEM(struct processStateInfo inpProcessData, int currentTime,
     perror("ERROR HAS OCCURRED IN OUTPUT FILE OPENING");
     return;
   }
+  int size=1024;
+    while (size >= 2 * inpProcessData.memSize) {
+      size/=2;
+    }
+
 
   if (operation == FREE) {
     fprintf(
         p_out,
         "# At \ttime %d \tfreed %d \tbytes for process %d \tfrom %d to %d\n",
         currentTime, inpProcessData.memSize, inpProcessData.id,
-        inpProcessData.offset, inpProcessData.offset + inpProcessData.memSize);
+        inpProcessData.offset, inpProcessData.offset + size);
   } else {
     fprintf(p_out,
             "# At \ttime %d \tallocated %d \tbytes for process %d \tfrom %d to "
             "%d\n",
             currentTime, inpProcessData.memSize, inpProcessData.id,
             inpProcessData.offset,
-            inpProcessData.offset + inpProcessData.memSize);
+            inpProcessData.offset + size);
   }
 
   fclose(p_out);
@@ -436,7 +441,7 @@ void destroyClk(bool terminateAll) {
 
 struct memBlock {
   unsigned int size;
-  int PID = -1;
+  int PID;
   unsigned int starts;
   struct memBlock *next;
 };
@@ -447,20 +452,20 @@ bool memoryAllocate(int procSize, int PID,
                     struct memBlock **allocatedMemoryBlocks,
                     struct memBlock **emptyMemoryBlocks) {
   struct memBlock *nextBlock = *emptyMemoryBlocks;
-  struct memBlock *prevBlock = nullptr;
-  struct memBlock *allocatedBlock = nullptr;
+  struct memBlock *prevBlock = NULL;
+  struct memBlock *allocatedBlock = NULL;
 
   // Find a the smallest empty memory block that can fit the process
-  while (nextBlock != nullptr) {
+  while (nextBlock != NULL) {
     if (nextBlock->size > procSize &&
-        (allocatedBlock == nullptr || nextBlock->size < allocatedBlock->size)) {
+        (allocatedBlock == NULL || nextBlock->size < allocatedBlock->size)) {
       allocatedBlock = nextBlock;
     };
     nextBlock = nextBlock->next;
   }
 
   // If there is no block big enough, return 0
-  if (allocatedBlock == nullptr)
+  if (allocatedBlock == NULL)
     return 0;
 
   // If the memory block found is not the first element, find the previous block
@@ -480,6 +485,7 @@ bool memoryAllocate(int procSize, int PID,
     struct memBlock *splittedBlock;
     splittedBlock = (struct memBlock *)malloc(sizeof(struct memBlock));
 
+    splittedBlock->PID = -1;
     splittedBlock->size = allocatedBlock->size;
     splittedBlock->starts = allocatedBlock->starts + allocatedBlock->size;
     splittedBlock->next = allocatedBlock->next;
@@ -489,7 +495,7 @@ bool memoryAllocate(int procSize, int PID,
 
   // If the block is the first element in the empty list, set the new start to
   // the list to the next block
-  if (prevBlock == nullptr) {
+  if (prevBlock == NULL) {
     *emptyMemoryBlocks = allocatedBlock->next;
   } else {
     prevBlock->next = allocatedBlock->next;
@@ -498,19 +504,24 @@ bool memoryAllocate(int procSize, int PID,
   // Initialize the allocated block with it's process id and set next to null
 
   allocatedBlock->PID = PID;
-  allocatedBlock->next = nullptr;
+  allocatedBlock->next = NULL;
 
-  prevBlock = nullptr;
+  prevBlock = NULL;
   nextBlock = *allocatedMemoryBlocks;
 
   // If the allocated memory list is empty, initialize it with the allocated
   // block
-  if (nextBlock == nullptr) {
+  if (nextBlock == NULL) {
     *allocatedMemoryBlocks = allocatedBlock;
-  } else {
+  } else 
+  if (allocatedBlock->starts < nextBlock->starts){
+    allocatedBlock->next=nextBlock;
+    *allocatedMemoryBlocks = allocatedBlock;
+  }
+  else{
     // Else, order it by it's starting position in the list.
 
-    while (nextBlock != nullptr && allocatedBlock->starts > nextBlock->starts) {
+    while (nextBlock != NULL && allocatedBlock->starts > nextBlock->starts) {
       prevBlock = nextBlock;
       nextBlock = nextBlock->next;
     }
@@ -525,31 +536,31 @@ bool memoryDeallocate(int PID, struct memBlock **allocatedMemoryBlocks,
                       struct memBlock **emptyMemoryBlocks) {
   // Temporary next and previous pointers in allocated memory
   struct memBlock *nextBlock = *allocatedMemoryBlocks;
-  struct memBlock *prevBlock = nullptr;
+  struct memBlock *prevBlock = NULL;
 
   // Deallocated memory block
   struct memBlock *blockDeallocated;
 
   // Looking for memory block to be deallocated
 
-  if (nextBlock != nullptr && nextBlock->PID == PID) {
+  if (nextBlock != NULL && nextBlock->PID == PID) {
     // Checks if the block is the first element
     *allocatedMemoryBlocks = nextBlock->next;
   } else {
-    while (nextBlock != nullptr && nextBlock->PID != PID) {
+    while (nextBlock != NULL && nextBlock->PID != PID) {
       prevBlock = nextBlock;
       nextBlock = nextBlock->next;
     };
   }
 
   // Did not find PID in allocated memory blocks, returning 0
-  if (nextBlock == nullptr) {
+  if (nextBlock == NULL) {
     return 0;
   };
 
   // Found PID that's not the first element of allocated memory blocks,
   // dellocating...
-  if (prevBlock != nullptr) {
+  if (prevBlock != NULL) {
     prevBlock->next = nextBlock->next;
   };
 
@@ -557,25 +568,25 @@ bool memoryDeallocate(int PID, struct memBlock **allocatedMemoryBlocks,
 
   // Temporary next and previous pointers in deallocated memory
   nextBlock = *emptyMemoryBlocks;
-  prevBlock = nullptr;
+  prevBlock = NULL;
 
   blockDeallocated->PID = -1;
 
   // If the empty memory blocks list is empty, set list to start at deallocated
   // block
-  if (nextBlock == nullptr) {
-    blockDeallocated->next = nullptr;
+  if (nextBlock == NULL) {
+    blockDeallocated->next = NULL;
     *emptyMemoryBlocks = blockDeallocated;
 
     return 1;
   }
 
   // else, insert into list based on address order.
-  while (nextBlock != nullptr && blockDeallocated->starts > nextBlock->starts) {
+  while (nextBlock != NULL && blockDeallocated->starts > nextBlock->starts) {
     prevBlock = nextBlock;
     nextBlock = nextBlock->next;
   }
-  if (prevBlock == nullptr) {
+  if (prevBlock == NULL) {
     blockDeallocated->next = nextBlock;
     *emptyMemoryBlocks = blockDeallocated;
   } else {
@@ -591,7 +602,7 @@ bool memoryDeallocate(int PID, struct memBlock **allocatedMemoryBlocks,
 
 bool memoryCollect(struct memBlock **emptyMemoryBlocks) {
   // If the list is empty, return 0
-  if (*emptyMemoryBlocks == nullptr) {
+  if (*emptyMemoryBlocks == NULL) {
     return 0;
   };
   struct memBlock *prevBlock = *emptyMemoryBlocks;
@@ -600,14 +611,14 @@ bool memoryCollect(struct memBlock **emptyMemoryBlocks) {
   // While the next block is not empty, and the XOR of the start value of the
   // previous block and the size of the block (ex: 1100^10=1110, 1110^10!=11100)
   // does not give the start of the next block, iterate
-  while (nextBlock != nullptr &&
+  while (nextBlock != NULL &&
          (prevBlock->starts ^ prevBlock->size) != nextBlock->starts) {
     prevBlock = nextBlock;
     nextBlock = nextBlock->next;
   };
 
   // If no match is found, return 0
-  if (nextBlock == nullptr)
+  if (nextBlock == NULL)
     return 0;
 
   // If two split pairs are found, collect them together then return 1

@@ -62,8 +62,9 @@ int main(int argc, char *argv[]) {
 
   emptyMemoryBlocks = (struct memBlock *)malloc(sizeof(struct memBlock));
   emptyMemoryBlocks->starts = 0;
+  emptyMemoryBlocks->PID = -1;
   emptyMemoryBlocks->size = 1024;
-  emptyMemoryBlocks->next = nullptr;
+  emptyMemoryBlocks->next = NULL;
 
   ProcessTable = (struct processStateInfo *)malloc(
       countProcesses * sizeof(struct processStateInfo));
@@ -124,18 +125,18 @@ int main(int argc, char *argv[]) {
             msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
                    sizeof(struct processMsgBuff) - sizeof(long), 0, IPC_NOWAIT);
         if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
+          printf("Recieved a Process! %d\n\n\n", RecievedProcess.process.id);
 
           processWaitingFlag = 1;
           processAllocated = memoryAllocate(
               RecievedProcess.process.memsize, RecievedProcess.process.id,
               &allocatedMemoryBlocks, &emptyMemoryBlocks);
         }
-
-        if (processWaitingFlag) {
+      } else
+        {
           if (processAllocated) {
 
             int PID = fork();
-            printf("Child Fork! %d\n", PID);
 
             if (PID == 0) {
               char strrunTime[6];
@@ -150,6 +151,7 @@ int main(int argc, char *argv[]) {
               execv("process.out", processargs);
               perror("Execv failed!\n");
             }
+            printf("Child Fork! %d\n\n\n", RecievedProcess.process.id);
             // Parent process (scheduler)
             RecievedProcess.process.pid = PID;
 
@@ -193,6 +195,7 @@ int main(int argc, char *argv[]) {
                       ALLOCATE);
 
             processWaitingFlag = 0;
+            processAllocated = 0;
 
           } else {
             processAllocated = memoryAllocate(
@@ -200,7 +203,6 @@ int main(int argc, char *argv[]) {
                 &allocatedMemoryBlocks, &emptyMemoryBlocks);
           }
         }
-      }
 
       if (proccessRunningSJF == 0) {
         struct processData highestprio = extract_highestpri(pq);
@@ -369,6 +371,9 @@ int main(int argc, char *argv[]) {
     while (numberFinishedProcesses < countProcesses) {
 
 #pragma region "Recieving Process Data"
+
+      if(!processWaitingFlag){
+
       // Check message queue for processes
       Gen_Sched_RCV_VAL =
           msgrcv(Gen_Sched_MSGQ, &RecievedProcess,
@@ -376,6 +381,15 @@ int main(int argc, char *argv[]) {
 
       // If process found, generate process then add it to queue
       if (Gen_Sched_RCV_VAL != -1 && Gen_Sched_RCV_VAL != 0) {
+          processWaitingFlag = 1;
+          processAllocated = memoryAllocate(
+              RecievedProcess.process.memsize, RecievedProcess.process.id,
+              &allocatedMemoryBlocks, &emptyMemoryBlocks);
+      }
+      }else{
+        if(processAllocated){
+
+
         int PID = fork();
         if (PID == 0) {
           char strrunTime[6];
@@ -387,8 +401,14 @@ int main(int argc, char *argv[]) {
           char *processargs[] = {"./process.out", strrunTime, strid,
                                  strarrivalTime, NULL};
           execv("process.out", processargs);
-        };
+        }
         kill(PID, SIGSTOP);
+
+            // Finding the allocated memory block
+            struct memBlock *tempMemoryBlock = allocatedMemoryBlocks;
+            while (tempMemoryBlock->PID != RecievedProcess.process.id) {
+              tempMemoryBlock = tempMemoryBlock->next;
+            }
 
         // Initializing some variables for process in the process table
         ProcessTable[RecievedProcess.process.id - 1].arrivalTime =
@@ -399,9 +419,28 @@ int main(int argc, char *argv[]) {
             RecievedProcess.process.runTime;
         ProcessTable[RecievedProcess.process.id - 1].id =
             RecievedProcess.process.id;
+
+        ProcessTable[RecievedProcess.process.id - 1].memSize =
+            RecievedProcess.process.memsize;
+        ProcessTable[RecievedProcess.process.id - 1].offset =
+            tempMemoryBlock->starts;
+
         // Adding process to queue
         RecievedProcess.process.pid = PID;
         insert_RR_priQ(pq, RecievedProcess.process);
+
+
+
+            outputMEM(ProcessTable[RecievedProcess.process.id - 1], x,
+                      ALLOCATE);
+
+            processWaitingFlag = 0;
+            processAllocated = 0;
+      }else{
+            processAllocated = memoryAllocate(
+                RecievedProcess.process.memsize, RecievedProcess.process.id,
+                &allocatedMemoryBlocks, &emptyMemoryBlocks);
+      }
       }
 #pragma endregion
 
@@ -455,11 +494,19 @@ int main(int argc, char *argv[]) {
                      sizeof(struct processStateInfoMsgBuff) - sizeof(long), 0,
                      !IPC_NOWAIT);
           // store process info in process table
+          printf("about to take info\n");
+
+          int memsize=ProcessTable[runningProcess.id - 1].memSize;
+          int offset=ProcessTable[runningProcess.id - 1].offset;
+          printf("memsize here is %d\n",memsize);
           ProcessTable[runningProcess.id - 1] =
               current_process_msg.processState;
+          ProcessTable[runningProcess.id - 1].memSize=memsize;
+          ProcessTable[runningProcess.id - 1].offset=offset;
 
           // NOT SURE WHAT ROUNDROBIN IS DOING HERE BUT CHANGE OF STATE OCCURS
           // SHOULD BE OUTPUTED
+          printf("about to output\n");
           output(current_process_msg.processState, x, waiting);
 
           // put process back into queue
@@ -498,6 +545,18 @@ void clearResources(int signum) {
   msgctl(Terminating_Process_MSGQ, IPC_RMID, NULL);
   /*kill(SchedulerPID, SIGINT);*/
   // Incomplete
+  struct memBlock *temp=emptyMemoryBlocks;
+  while(temp!=NULL){
+    emptyMemoryBlocks=temp;
+    temp=emptyMemoryBlocks->next;
+    free(emptyMemoryBlocks);
+  }
+  temp=allocatedMemoryBlocks;
+  while(temp!=NULL){
+    allocatedMemoryBlocks=temp;
+    temp=allocatedMemoryBlocks->next;
+    free(allocatedMemoryBlocks);
+  }
   while (runningProcess.pid != -1) {
     runningProcess = extract_highestpri(pq);
     kill(runningProcess.pid, SIGINT);
@@ -513,6 +572,8 @@ void handler_SIGCHILD(int signal) {
   numberFinishedProcesses++;
   origin = x;
 
+  printf("process terminating...\n");
+
   struct processStateInfoMsgBuff finishedProcessState;
 
   Terminating_Process_RCV_VAL = msgrcv(
@@ -523,10 +584,22 @@ void handler_SIGCHILD(int signal) {
   };
   terminatedProcessId = finishedProcessState.processState.id;
 
+      printf("about to deallocate\n");
   memoryDeallocate(ProcessTable[finishedProcessState.processState.id - 1].id,
                    &allocatedMemoryBlocks, &emptyMemoryBlocks);
+      printf("deallocated\n");
 
   outputMEM(ProcessTable[finishedProcessState.processState.id - 1], x, FREE);
+      printf("printed\n");
+
+  struct memBlock* temp=allocatedMemoryBlocks;
+  int number=1;
+  while(temp!=NULL){
+    number++;
+    temp=temp->next;
+  };
+
+  printf("There is %d\n\n",number);
 
   output(finishedProcessState.processState, x, waiting);
 
